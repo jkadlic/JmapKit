@@ -24,5 +24,5 @@ public sealed class JmapRequest
     /// </summary>
     [JsonPropertyName("createdIds")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public Dictionary<string, string>? CreatedIds { get; init; }
+    public Dictionary<string, JmapId>? CreatedIds { get; init; }
 }

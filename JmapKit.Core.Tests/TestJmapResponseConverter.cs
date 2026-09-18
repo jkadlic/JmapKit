@@ -32,7 +32,7 @@ public class TestJmapResponseConverter
         r.Should().NotBeNull();
         r.SessionState.Should().Be("abc123");
         r.CreatedIds.Should().NotBeNull();
-        r.CreatedIds["clientId1"].Should().Be("serverId1");
+        r.CreatedIds["clientId1"].Should().Be((JmapId)"serverId1");
         r.MethodResponses.Should().HaveCount(1);
         r.MethodResponses[0].Name.Should().Be("method1");
         r.MethodResponses[0].CallId.Should().Be("c1");

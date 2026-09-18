@@ -57,7 +57,7 @@ public class TestJmapRequestConverter
         {
             Using = [JmapCoreCapability.Core],
             MethodCalls = [],
-            CreatedIds = new Dictionary<string, string> { { "clientId1", "serverId1" } }
+            CreatedIds = new Dictionary<string, JmapId> { { "clientId1", (JmapId)"serverId1" } }
         };
 
         var r = JsonSerializer.Serialize(request);
