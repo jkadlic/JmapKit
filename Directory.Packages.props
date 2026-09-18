@@ -1,0 +1,16 @@
+<Project>
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    </PropertyGroup>
+    <ItemGroup>
+        <!-- Implementation Packages -->
+        <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
+        <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.7" />
+        <!-- Console Packages -->
+        <PackageVersion Include="DotNetEnv" Version="3.2.0" />
+        <!-- Test Packages -->
+        <PackageVersion Include="FluentAssertions" Version="8.11.0" />
+        <PackageVersion Include="MSTest" Version="4.0.2"/>
+    </ItemGroup>
+</Project>

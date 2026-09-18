@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>JmapKit.Tests</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="MSTest" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\JmapKit.Core\JmapKit.Core.csproj" />
+    </ItemGroup>
+
+</Project>
