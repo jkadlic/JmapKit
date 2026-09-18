@@ -1,9 +1,40 @@
 <Project>
     <PropertyGroup>
+        <!-- Language / project settings -->
+        <RootNamespace>JmapKit</RootNamespace>
         <TargetFramework>net10.0</TargetFramework>
-        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+
+        <!-- Restore settings -->
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+
+        <!-- Versioning -->
+        <MinVerTagPrefix>v</MinVerTagPrefix>
+        <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
+
+        <!-- NuGet package metadata -->
+        <Authors>jkadlic</Authors>
+        <Description>A .NET client library for JMAP (RFC 8620).</Description>
+        <PackageProjectUrl>https://github.com/jkadlic/JmapKit</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/jkadlic/JmapKit</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageTags>jmap</PackageTags>
+
+        <!-- Packaging / build behavior -->
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+        <PackageReference Include="MinVer" PrivateAssets="All" />
+    </ItemGroup>
 </Project>
