@@ -1,0 +1,62 @@
+name: promote
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+
+  # --- Resolve target branch ----
+
+  resolve:
+    if: |
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/promote') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      pr_number: ${{ github.event.issue.number }}
+    steps:
+      - name: Require PR base branch is release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TARGET=$(gh pr view "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --json baseRefName -q .baseRefName)
+          if [[ "$TARGET" != "release" ]]; then
+            echo "::error::PR base '$TARGET' is not a promotion target (release)"
+            exit 1
+          fi
+
+  # --- Verify + fast-forward ----
+
+  fast-forward:
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      checks: read
+      actions: read
+    steps:
+      - name: Require required checks green
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr checks "${{ needs.resolve.outputs.pr_number }}" --repo "${{ github.repository }}" --required
+
+      - name: Mint App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.PROMOTE_APP_ID }}
+          private-key: ${{ secrets.PROMOTE_APP_PRIVATE_KEY }}
+
+      - name: Fast-forward promote
+        uses: sequoia-pgp/fast-forward@v1
+        with:
+          merge: true
+          comment: always
+          github_token: ${{ steps.app-token.outputs.token }}
