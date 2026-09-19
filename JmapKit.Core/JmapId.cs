@@ -4,18 +4,18 @@ using System.Text.Json.Serialization;
 namespace JmapKit;
 
 /// <summary>
-/// A JMAP Id, used to identify all resources in a JMAP server. A JMAP response, returned from the API endpoint (<see href="https://www.rfc-editor.org/rfc/rfc8620.html#section-1.2">RFC 8620 §1.2</see>).
+/// A JMAP id, used to identify all resources in a JMAP server. A JMAP response, returned from the API endpoint (<see href="https://www.rfc-editor.org/rfc/rfc8620.html#section-1.2">RFC 8620 §1.2</see>).
 /// </summary>
 [JsonConverter(typeof(JmapIdConverter))]
 public readonly struct JmapId : IEquatable<JmapId>, IComparable<JmapId>
 {
     /// <summary>
-    /// The minimum length in octets for an Id.
+    /// The minimum length in octets for an id.
     /// </summary>
     public const int MinLengthOctets = 1;
     
     /// <summary>
-    /// The maximum length in octets for an Id.
+    /// The maximum length in octets for an id.
     /// </summary>
     public const int MaxLengthOctets = 255;
 
@@ -101,6 +101,12 @@ public readonly struct JmapId : IEquatable<JmapId>, IComparable<JmapId>
 
     /// inheritdoc
     public bool Equals(JmapId other) => string.Equals(_value, other._value, StringComparison.Ordinal);
+
+    /// inheritdoc
+    public override bool Equals(object? obj) => obj is JmapId other && Equals(other);
+
+    /// inheritdoc
+    public override int GetHashCode() => _value?.GetHashCode(StringComparison.Ordinal) ?? 0;
 
     /// inheritdoc
     public int CompareTo(JmapId other) => string.CompareOrdinal(_value, other._value);
