@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -24,6 +25,33 @@ public class JmapMethodResponse
     /// The client-assigned id from the <see cref="JmapMethodInvocation"/> this responds to.
     /// </summary>
     public required string CallId { get; init; }
+
+    /// <summary>
+    /// Whether the server returned a method-level error (RFC 8620 §3.6.1) instead of a normal result.
+    /// </summary>
+    public bool IsError => Name == "error";
+
+    /// <summary>
+    /// Deserializes <see cref="Arguments"/> into <typeparamref name="T"/> if this call succeeded, or into a
+    /// <see cref="JmapMethodError"/> if the server returned an error in its place.
+    /// </summary>
+    /// <returns>True if deserialized into <paramref name="value"/>; false if deserialized into <paramref name="error"/>.</returns>
+    public bool TryDeserialize<T>(
+        JsonSerializerOptions options,
+        [NotNullWhen(true)] out T? value,
+        [NotNullWhen(false)] out JmapMethodError? error)
+    {
+        if (IsError)
+        {
+            value = default;
+            error = Arguments.Deserialize<JmapMethodError>(options)!;
+            return false;
+        }
+
+        value = Arguments.Deserialize<T>(options)!;
+        error = null;
+        return true;
+    }
 }
 
 /// <summary>

@@ -15,6 +15,9 @@ public sealed class TestJmapPartial
     /// </summary>
     private sealed record TestObject : IJmapObject
     {
+        public static string JmapName => "TestObject";
+        public static JmapCapability Capability => JmapCoreCapability.Core;
+
         public string? Name { get; init; }
         public long? Count { get; init; }
         public bool? Flag { get; init; }

@@ -9,6 +9,9 @@ namespace JmapKit.Tests;
 /// </summary>
 public sealed record TestObject : IJmapObject
 {
+    public static string JmapName => "TestObject";
+    public static JmapCapability Capability => JmapCoreCapability.Core;
+
     public string? Name { get; init; }
 }
 
