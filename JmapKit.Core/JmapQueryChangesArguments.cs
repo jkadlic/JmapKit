@@ -16,19 +16,19 @@ public sealed record JmapQueryChangesArguments<T>
 	public required JmapId AccountId { get; init; }
 
 	/// <summary>
-	/// The same filter as passed to "<see cref="T"/>/query"; see
+	/// The same filter as passed to "<typeparamref name="T"/>/query"; see
 	/// <see cref="JmapQueryArguments{T}.Filter"/>.
 	/// </summary>
 	public JsonElement? Filter { get; init; }
 
 	/// <summary>
-	/// The same sort as passed to "<see cref="T"/>/query"; see <see cref="JmapQueryArguments{T}.Sort"/>.
+	/// The same sort as passed to "<typeparamref name="T"/>/query"; see <see cref="JmapQueryArguments{T}.Sort"/>.
 	/// </summary>
 	public JmapComparator[]? Sort { get; init; }
 
 	/// <summary>
 	/// The current state of the query in the client, as returned in a previous
-	/// "<see cref="T"/>/query" or "<see cref="T"/>/queryChanges" response.
+	/// "<typeparamref name="T"/>/query" or "<typeparamref name="T"/>/queryChanges" response.
 	/// </summary>
 	public required string SinceQueryState { get; init; }
 
@@ -77,7 +77,7 @@ public sealed record JmapQueryChangesResponse<T>
 	public required string NewQueryState { get; init; }
 
 	/// <summary>
-	/// The total number of <see cref="T"/> objects in the results, ignoring position and limit. Only present
+	/// The total number of <typeparamref name="T"/> objects in the results, ignoring position and limit. Only present
 	/// if <see cref="JmapQueryChangesArguments{T}.CalculateTotal"/> was true.
 	/// </summary>
 	public long? Total { get; init; }

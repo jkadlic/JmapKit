@@ -16,9 +16,9 @@ public sealed record JmapQueryArguments<T>
 	public required JmapId AccountId { get; init; }
 
 	/// <summary>
-	/// Determines which <see cref="T"/> objects are included in the results, as either a FilterOperator
+	/// Determines which <typeparamref name="T"/> objects are included in the results, as either a FilterOperator
 	/// (combining other filters with "AND"/"OR"/"NOT") or a FilterCondition whose supported properties are
-	/// defined by <see cref="T"/>. Null (the default) means all objects are included.
+	/// defined by <typeparamref name="T"/>. Null (the default) means all objects are included.
 	/// </summary>
 	public JsonElement? Filter { get; init; }
 
@@ -75,13 +75,13 @@ public sealed record JmapQueryResponse<T>
 
 	/// <summary>
 	/// A string encoding the current state of the query on the server. This is passed as
-	/// <see cref="JmapQueryChangesArguments{T}.SinceQueryState"/> on a later "<see cref="T"/>/queryChanges"
+	/// <see cref="JmapQueryChangesArguments{T}.SinceQueryState"/> on a later "<typeparamref name="T"/>/queryChanges"
 	/// call to fetch only what has changed.
 	/// </summary>
 	public required string QueryState { get; init; }
 
 	/// <summary>
-	/// If true, the server supports calling "<see cref="T"/>/queryChanges" for this query going forward; the
+	/// If true, the server supports calling "<typeparamref name="T"/>/queryChanges" for this query going forward; the
 	/// meaning of this filter/sort combination may not otherwise be trackable over time (e.g. it depends on
 	/// the client's local time).
 	/// </summary>
@@ -93,13 +93,13 @@ public sealed record JmapQueryResponse<T>
 	public required long Position { get; init; }
 
 	/// <summary>
-	/// The ids of the <see cref="T"/> objects matching the query, in the requested sort order, starting from
+	/// The ids of the <typeparamref name="T"/> objects matching the query, in the requested sort order, starting from
 	/// <see cref="Position"/> and limited to at most <see cref="JmapQueryArguments{T}.Limit"/> entries.
 	/// </summary>
 	public required JmapId[] Ids { get; init; }
 
 	/// <summary>
-	/// The total number of <see cref="T"/> objects in the results, ignoring position and limit. Only present
+	/// The total number of <typeparamref name="T"/> objects in the results, ignoring position and limit. Only present
 	/// if <see cref="JmapQueryArguments{T}.CalculateTotal"/> was true.
 	/// </summary>
 	public long? Total { get; init; }
