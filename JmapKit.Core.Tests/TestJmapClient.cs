@@ -60,7 +60,7 @@ public class TestJmapClient
     private static JmapRequest EchoRequest() => new()
     {
         Using = [JmapCoreCapability.Core],
-        MethodCalls = [new JmapMethodInvocation { Name = "Core/echo", Arguments = [], CallId = "c0" }]
+        MethodCalls = [new JmapMethodInvocation { Name = "Core/echo", Arguments = JsonDocument.Parse("{}").RootElement, CallId = "c0" }]
     };
 
     [TestMethod]
@@ -169,7 +169,7 @@ public class TestJmapClient
 
         response.MethodResponses.Should().HaveCount(1);
         response.MethodResponses[0].Name.Should().Be("Core/echo");
-        response.MethodResponses[0].Arguments["hello"].Should().Be("world");
+        response.MethodResponses[0].Arguments.GetProperty("hello").GetString().Should().Be("world");
     }
 
     [TestMethod]

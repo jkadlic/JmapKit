@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace JmapKit;
 
 /// <summary>
@@ -17,7 +19,7 @@ public sealed record JmapQueryChangesArguments<T>
 	/// The same filter as passed to "<see cref="T"/>/query"; see
 	/// <see cref="JmapQueryArguments{T}.Filter"/>.
 	/// </summary>
-	public object? Filter { get; init; }
+	public JsonElement? Filter { get; init; }
 
 	/// <summary>
 	/// The same sort as passed to "<see cref="T"/>/query"; see <see cref="JmapQueryArguments{T}.Sort"/>.

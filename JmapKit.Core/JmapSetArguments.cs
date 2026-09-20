@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace JmapKit;
 
 /// <summary>
@@ -27,7 +29,7 @@ public sealed record JmapSetArguments<T>
 	/// <summary>
 	/// A map of the id of an existing <see cref="T"/> object to a Patch object describing the changes to apply.
 	/// </summary>
-	public Dictionary<JmapId, object>? Update { get; init; }
+	public Dictionary<JmapId, JsonElement>? Update { get; init; }
 
 	/// <summary>
 	/// A list of ids for <see cref="T"/> objects to permanently delete.

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace JmapKit;
@@ -29,7 +30,7 @@ public sealed class JmapSessionAccount
     /// Capability-specific properties for this account, keyed by capability URI.
     /// </summary>
     [JsonPropertyName("accountCapabilities")]
-    public Dictionary<string, Dictionary<string, object?>> AccountCapabilities { get; init; } = [];
+    public Dictionary<string, JsonElement> AccountCapabilities { get; init; } = [];
 }
 
 /// <summary>
@@ -90,5 +91,5 @@ public sealed class JmapSession
     /// Server-wide capability properties, keyed by capability URI.
     /// </summary>
     [JsonPropertyName("capabilities")]
-    public required Dictionary<string, Dictionary<string, object?>> Capabilities { get; init; }
+    public required Dictionary<string, JsonElement> Capabilities { get; init; }
 }

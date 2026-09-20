@@ -18,7 +18,7 @@ public sealed class JmapMethodInvocation
     /// <summary>
     /// The method's arguments.
     /// </summary>
-    public required Dictionary<string, object?> Arguments { get; init; }
+    public required JsonElement Arguments { get; init; }
 
     /// <summary>
     /// A client-assigned id used to match this call to its <see cref="JmapMethodResponse"/>.
@@ -49,7 +49,7 @@ public class JmapMethodInvocationConverter : JsonConverter<JmapMethodInvocation>
     {
         writer.WriteStartArray();
         writer.WriteStringValue(value.Name);
-        JsonSerializer.Serialize(writer, value.Arguments, options);
+        value.Arguments.WriteTo(writer);
         writer.WriteStringValue(value.CallId);
         writer.WriteEndArray();
     }

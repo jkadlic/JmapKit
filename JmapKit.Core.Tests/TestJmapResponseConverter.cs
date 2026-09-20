@@ -8,12 +8,6 @@ public class TestJmapResponseConverter
 {
     private static JsonSerializerOptions Options { get; } = new();
 
-    [ClassInitialize]
-    public static void Initialize(TestContext context)
-    {
-        Options.Converters.Add(new JmapObjectConverter());
-    }
-
     [TestMethod]
     public void Deserialize_ValidResponse_ReturnsResponseObject()
     {
@@ -36,8 +30,8 @@ public class TestJmapResponseConverter
         r.MethodResponses.Should().HaveCount(1);
         r.MethodResponses[0].Name.Should().Be("method1");
         r.MethodResponses[0].CallId.Should().Be("c1");
-        r.MethodResponses[0].Arguments["arg1"].Should().Be(3);
-        r.MethodResponses[0].Arguments["arg2"].Should().Be("foo");
+        r.MethodResponses[0].Arguments.GetProperty("arg1").GetInt32().Should().Be(3);
+        r.MethodResponses[0].Arguments.GetProperty("arg2").GetString().Should().Be("foo");
     }
 
     [TestMethod]

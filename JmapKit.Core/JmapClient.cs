@@ -41,7 +41,6 @@ public sealed class JmapClient : IJmapClient
         _credential = credential;
         _options = options;
         _jsonOptions = new JsonSerializerOptions();
-        _jsonOptions.Converters.Add(new JmapObjectConverter());
     }
 
     private async Task ResolveEntrypointAsync(CancellationToken ct)

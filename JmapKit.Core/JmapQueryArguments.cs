@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace JmapKit;
 
 /// <summary>
@@ -18,7 +20,7 @@ public sealed record JmapQueryArguments<T>
 	/// (combining other filters with "AND"/"OR"/"NOT") or a FilterCondition whose supported properties are
 	/// defined by <see cref="T"/>. Null (the default) means all objects are included.
 	/// </summary>
-	public object? Filter { get; init; }
+	public JsonElement? Filter { get; init; }
 
 	/// <summary>
 	/// Lists the properties to sort the results by, in order of precedence. If null or empty, the server

@@ -18,7 +18,7 @@ public class JmapMethodResponse
     /// <summary>
     /// The method's result arguments.
     /// </summary>
-    public required Dictionary<string, object?> Arguments { get; init; }
+    public required JsonElement Arguments { get; init; }
 
     /// <summary>
     /// The client-assigned id from the <see cref="JmapMethodInvocation"/> this responds to.
@@ -46,9 +46,9 @@ public class JmapMethodResponseConverter : JsonConverter<JmapMethodResponse>
         var name = reader.GetString()!;
 
         reader.Read();
-        var arguments = JsonSerializer.Deserialize<Dictionary<string, object?>>(ref reader, options);
-        if (arguments is null)
+        if (reader.TokenType != JsonTokenType.StartObject)
             throw new JsonException("Expected arguments object as second element of method response tuple.");
+        var arguments = JsonElement.ParseValue(ref reader);
 
         reader.Read();
         if (reader.TokenType != JsonTokenType.String)
