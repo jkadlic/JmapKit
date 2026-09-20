@@ -3,7 +3,7 @@ using FluentAssertions;
 namespace JmapKit.Tests;
 
 /// <summary>
-/// Tests for <see cref="JmapId"/> against the "Id" data type defined in
+/// Tests for <see cref="JmapId"/> against the "id" data type defined in
 /// <see href="https://www.rfc-editor.org/rfc/rfc8620.html#section-1.2">RFC 8620 §1.2</see>.
 /// </summary>
 [TestClass]
@@ -278,6 +278,70 @@ public class TestJmapId
 
         shorter.CompareTo(longer).Should().BeLessThan(0);
         longer.CompareTo(shorter).Should().BeGreaterThan(0);
+    }
+
+    // ----- Object equality overrides -----
+
+    [TestMethod]
+    public void ObjectEquals_SameValue_ReturnsTrue()
+    {
+        var a = JmapId.Parse("same-id");
+        object b = JmapId.Parse("same-id");
+
+        a.Equals(b).Should().BeTrue();
+    }
+
+    [TestMethod]
+    public void ObjectEquals_DifferentValue_ReturnsFalse()
+    {
+        var a = JmapId.Parse("id-a");
+        object b = JmapId.Parse("id-b");
+
+        a.Equals(b).Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void ObjectEquals_DifferentType_ReturnsFalse()
+    {
+        var a = JmapId.Parse("abc");
+
+        a.Equals("abc").Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void ObjectEquals_Null_ReturnsFalse()
+    {
+        var a = JmapId.Parse("abc");
+
+        a.Equals((object?)null).Should().BeFalse();
+    }
+
+    [TestMethod]
+    public void GetHashCode_EqualValues_ReturnsSameHashCode()
+    {
+        var a = JmapId.Parse("same-id");
+        var b = JmapId.Parse("same-id");
+
+        a.GetHashCode().Should().Be(b.GetHashCode());
+    }
+
+    [TestMethod]
+    public void GetHashCode_DefaultId_DoesNotThrow()
+    {
+        var act = () => default(JmapId).GetHashCode();
+
+        act.Should().NotThrow();
+    }
+
+    [TestMethod]
+    public void Hashtable_BoxedLookup_UsesObjectEqualsAndGetHashCodeOverrides()
+    {
+        var table = new System.Collections.Hashtable
+        {
+            [JmapId.Parse("key")] = "value"
+        };
+
+        table[JmapId.Parse("key")].Should().Be("value");
     }
 
     // ----- LINQ usage -----

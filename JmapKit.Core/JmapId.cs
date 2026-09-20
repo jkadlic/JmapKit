@@ -130,4 +130,18 @@ public class JmapIdConverter : JsonConverter<JmapId>
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, JmapId value, JsonSerializerOptions options) =>
         writer.WriteStringValue(value.ToString());
+
+    /// <inheritdoc />
+    public override JmapId ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var value = reader.GetString();
+        if (!JmapId.TryParse(value, out var id))
+            throw new JsonException($"'{value}' is not a valid JMAP id.");
+
+        return id;
+    }
+
+    /// <inheritdoc />
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, JmapId value, JsonSerializerOptions options) =>
+        writer.WritePropertyName(value.ToString());
 }
