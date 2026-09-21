@@ -12,7 +12,7 @@ public class TestJmapClient
     private sealed record TestObject : IJmapObject
     {
         public static string JmapName => "TestObject";
-        public static JmapCapability Capability => new("urn:test:capability");
+        public static JmapCapability[] Using => [new("urn:test:capability"), new("urn:ietf:params:jmap:core")];
     }
 
     private const string Host = "jmap.example.com";
@@ -287,6 +287,41 @@ public class TestJmapClient
         var client = CreateClient(CreateHappyPathHandler());
 
         client.IsSessionResolved().Should().BeFalse();
+    }
+
+    // ----- Echo -----
+
+    [TestMethod]
+    public async Task EchoAsync_ValidResponse_ReturnsDeserializableMethodResponse()
+    {
+        var handler = CreateVerbHandler("""{"hello":"world"}""");
+        var client = CreateClient(handler);
+
+        var response = await client.EchoAsync(new Dictionary<string, string> { ["hello"] = "world" }, CancellationToken.None);
+
+        response.Name.Should().Be("Core/echo");
+        response.IsError.Should().BeFalse();
+        response.TryDeserialize<Dictionary<string, string>>(new JsonSerializerOptions(), out var value, out var error)
+            .Should().BeTrue();
+        value.Should().ContainKey("hello").WhoseValue.Should().Be("world");
+        error.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task EchoAsync_RequestShape_UsesOnlyCoreCapability()
+    {
+        var handler = CreateVerbHandler("""{"hello":"world"}""");
+        var client = CreateClient(handler);
+
+        await client.EchoAsync(new Dictionary<string, string> { ["hello"] = "world" }, CancellationToken.None);
+
+        var body = await handler.Requests[2].Content!.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.GetProperty("using").EnumerateArray().Select(e => e.GetString())
+            .Should().BeEquivalentTo(["urn:ietf:params:jmap:core"]);
+        var call = doc.RootElement.GetProperty("methodCalls")[0];
+        call[0].GetString().Should().Be("Core/echo");
+        call[2].GetString().Should().Be("c0");
     }
 
     // ----- Typed verb methods -----

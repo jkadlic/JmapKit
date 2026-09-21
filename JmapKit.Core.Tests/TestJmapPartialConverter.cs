@@ -10,7 +10,7 @@ namespace JmapKit.Tests;
 public sealed record TestObject : IJmapObject
 {
     public static string JmapName => "TestObject";
-    public static JmapCapability Capability => JmapCoreCapability.Core;
+    public static JmapCapability[] Using => [new("urn:test:capability")];
 
     public string? Name { get; init; }
 }

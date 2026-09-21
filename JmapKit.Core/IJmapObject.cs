@@ -12,7 +12,7 @@ public interface IJmapObject
     static abstract string JmapName { get; }
 
     /// <summary>
-    /// The capability this data type belongs to.
+    /// The capability URIs required to use this data type. Sent verbatim as the request's "using" property.
     /// </summary>
-    static abstract JmapCapability Capability { get; }
+    static abstract JmapCapability[] Using { get; }
 }

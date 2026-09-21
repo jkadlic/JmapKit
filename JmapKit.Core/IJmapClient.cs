@@ -33,6 +33,16 @@ public interface IJmapClient
     Task<JmapResponse> InvokeAsync(JmapRequest jmapRequest, CancellationToken ct = default);
 
     /// <summary>
+    /// Calls "<see cref="JmapCore"/>/echo". Only compatible with the '<see cref="JmapCore"/>' object, no other
+    /// <see cref="IJmapObject"/> can be provided.
+    /// </summary>
+    /// <typeparam name="TArgs">Type of data being provided.</typeparam>
+    /// <param name="args">The arguments for the call.</param>
+    /// <param name="ct">A token to cancel the operation.</param>
+    /// <returns></returns>
+    Task<JmapMethodResponse> EchoAsync<TArgs>(TArgs args, CancellationToken ct = default);
+    
+    /// <summary>
     /// Calls "<typeparamref name="T"/>/get".
     /// </summary>
     /// <typeparam name="T">Type of <see cref="IJmapObject"/> being referenced.</typeparam>

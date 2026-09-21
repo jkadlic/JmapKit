@@ -158,7 +158,7 @@ public sealed class JmapClient : IJmapClient
         };
         var request = new JmapRequest
         {
-            Using = [JmapCoreCapability.Core, T.Capability],
+            Using = T.Using,
             MethodCalls = [invocation]
         };
 
@@ -173,6 +173,10 @@ public sealed class JmapClient : IJmapClient
 
         return methodResponse;
     }
+
+    /// <inheritdoc />
+    public Task<JmapMethodResponse> EchoAsync<TArgs>(TArgs args, CancellationToken ct = default) =>
+        InvokeSingleAsync<JmapCore, TArgs>("echo", args, ct);
 
     /// <inheritdoc />
     public Task<JmapMethodResponse> GetAsync<T>(JmapGetArguments<T> args, CancellationToken ct = default) where T : IJmapObject =>
