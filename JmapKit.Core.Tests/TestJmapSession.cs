@@ -8,12 +8,6 @@ public class TestJmapSession
 {
     private static JsonSerializerOptions Options { get; } = new();
 
-    [ClassInitialize]
-    public static void Initialize(TestContext context)
-    {
-        Options.Converters.Add(new JmapObjectConverter());
-    }
-
     private static readonly Dictionary<string, object?> ValidSessionFields = new()
     {
         ["username"] = "user@example.com",
@@ -95,7 +89,7 @@ public class TestJmapSession
 
         session.Should().NotBeNull();
         var mailCapability = session.Accounts["acc1"].AccountCapabilities["urn:ietf:params:jmap:mail"];
-        mailCapability["maxMailboxesPerEmail"].Should().Be(1000);
+        mailCapability.GetProperty("maxMailboxesPerEmail").GetInt32().Should().Be(1000);
     }
 
     [TestMethod]
@@ -135,9 +129,9 @@ public class TestJmapSession
 
         session.Should().NotBeNull();
         var core = session.Capabilities["urn:ietf:params:jmap:core"];
-        core["maxSizeUpload"].Should().Be(250000000);
-        var algorithms = core["collationAlgorithms"].Should().BeOfType<List<object?>>().Subject;
-        algorithms.Should().BeEquivalentTo(new object?[] { "i;ascii-numeric", "i;ascii-casemap" });
+        core.GetProperty("maxSizeUpload").GetInt64().Should().Be(250000000);
+        var algorithms = core.GetProperty("collationAlgorithms").EnumerateArray().Select(e => e.GetString());
+        algorithms.Should().BeEquivalentTo(["i;ascii-numeric", "i;ascii-casemap"]);
     }
 
     [TestMethod]

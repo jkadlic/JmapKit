@@ -12,11 +12,11 @@ public class TestJmapMethodInvocationConverter
         var invocation = new JmapMethodInvocation
         {
             Name = "hello",
-            Arguments = new Dictionary<string, object?>
+            Arguments = JsonSerializer.SerializeToElement(new Dictionary<string, object?>
             {
                 { "arg1", 3 },
                 { "arg2", "foo" },
-            },
+            }),
             CallId = "c0"
         };
 
@@ -31,7 +31,7 @@ public class TestJmapMethodInvocationConverter
         var invocation = new JmapMethodInvocation
         {
             Name = "hello",
-            Arguments = new Dictionary<string, object?>(),
+            Arguments = JsonDocument.Parse("{}").RootElement,
             CallId = "c0"
         };
 
@@ -46,7 +46,7 @@ public class TestJmapMethodInvocationConverter
         var invocation = new JmapMethodInvocation
         {
             Name = "hello",
-            Arguments = new Dictionary<string, object?> { { "arg1", null } },
+            Arguments = JsonDocument.Parse("""{"arg1":null}""").RootElement,
             CallId = "c0"
         };
 

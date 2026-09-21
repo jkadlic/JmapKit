@@ -8,12 +8,6 @@ public sealed class TestJmapMethodResponseConverter
 {
     private static JsonSerializerOptions Options { get; } = new();
 
-    [ClassInitialize]
-    public static void Initialize(TestContext context)
-    {
-        Options.Converters.Add(new JmapObjectConverter());
-    }
-
     [TestMethod]
     public void Deserialize_ValidResponse_ReturnsResponseObject()
     {
@@ -29,12 +23,12 @@ public sealed class TestJmapMethodResponseConverter
         r.Should().NotBeNull();
         r.Name.Should().Be("method1");
         r.CallId.Should().Be("c1");
-        r.Arguments["arg1"].Should().Be(3);
-        r.Arguments["arg2"].Should().Be("foo");
+        r.Arguments.GetProperty("arg1").GetInt32().Should().Be(3);
+        r.Arguments.GetProperty("arg2").GetString().Should().Be("foo");
     }
 
     [TestMethod]
-    public void Deserialize_NestedObjectAndArrayArguments_ReturnsPlainClrValues()
+    public void Deserialize_NestedObjectAndArrayArguments_PreservesRawJson()
     {
         var json = """
         [ "method1", {
@@ -46,11 +40,13 @@ public sealed class TestJmapMethodResponseConverter
         var r = JsonSerializer.Deserialize<JmapMethodResponse>(json, Options);
 
         r.Should().NotBeNull();
-        var obj = r.Arguments["obj"].Should().BeOfType<Dictionary<string, object?>>().Subject;
-        obj["nested"].Should().Be(true);
+        r.Arguments.GetProperty("obj").GetProperty("nested").GetBoolean().Should().BeTrue();
 
-        var list = r.Arguments["list"].Should().BeOfType<List<object?>>().Subject;
-        list.Should().BeEquivalentTo(new object?[] { 1L, "two", null });
+        var list = r.Arguments.GetProperty("list");
+        list.ValueKind.Should().Be(JsonValueKind.Array);
+        list[0].GetInt32().Should().Be(1);
+        list[1].GetString().Should().Be("two");
+        list[2].ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     [TestMethod]
@@ -61,15 +57,23 @@ public sealed class TestJmapMethodResponseConverter
         var r = JsonSerializer.Deserialize<JmapMethodResponse>(json, Options);
 
         r.Should().NotBeNull();
-        r.Arguments["a"].Should().Be(true);
-        r.Arguments["b"].Should().Be(false);
-        r.Arguments["c"].Should().BeNull();
+        r.Arguments.GetProperty("a").GetBoolean().Should().BeTrue();
+        r.Arguments.GetProperty("b").GetBoolean().Should().BeFalse();
+        r.Arguments.GetProperty("c").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     [TestMethod]
     public void Deserialize_NotAnArray_ThrowsJsonException()
     {
         var act = () => JsonSerializer.Deserialize<JmapMethodResponse>("""{"name":"method1"}""", Options);
+
+        act.Should().Throw<JsonException>();
+    }
+
+    [TestMethod]
+    public void Deserialize_ArgumentsNotAnObject_ThrowsJsonException()
+    {
+        var act = () => JsonSerializer.Deserialize<JmapMethodResponse>("""["method1", [], "c1"]""", Options);
 
         act.Should().Throw<JsonException>();
     }
@@ -88,7 +92,7 @@ public sealed class TestJmapMethodResponseConverter
         var response = new JmapMethodResponse
         {
             Name = "method1",
-            Arguments = new Dictionary<string, object?>(),
+            Arguments = JsonDocument.Parse("{}").RootElement,
             CallId = "c1"
         };
 

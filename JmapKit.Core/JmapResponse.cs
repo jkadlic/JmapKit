@@ -17,7 +17,7 @@ public sealed class JmapResponse
     /// Client-provided ids from this request, mapped to the server-assigned ids they created.
     /// </summary>
     [JsonPropertyName("createdIds")]
-    public Dictionary<string, string>? CreatedIds { get; init; }
+    public Dictionary<string, JmapId>? CreatedIds { get; init; }
 
     /// <summary>
     /// The current state of the session; changes whenever anything in the session object changes.

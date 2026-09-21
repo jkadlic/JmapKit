@@ -12,11 +12,11 @@ public class TestJmapRequestConverter
         var invocation = new JmapMethodInvocation
         {
             Name = "hello",
-            Arguments = new Dictionary<string, object?>
+            Arguments = JsonSerializer.SerializeToElement(new Dictionary<string, object?>
             {
                 { "arg1", 3 },
                 { "arg2", "foo" },
-            },
+            }),
             CallId = "c0"
         };
 
@@ -39,8 +39,8 @@ public class TestJmapRequestConverter
             Using = [JmapCoreCapability.Core, new JmapCapability("urn:ietf:params:jmap:mail")],
             MethodCalls =
             [
-                new JmapMethodInvocation { Name = "a", Arguments = [], CallId = "c0" },
-                new JmapMethodInvocation { Name = "b", Arguments = [], CallId = "c1" }
+                new JmapMethodInvocation { Name = "a", Arguments = JsonDocument.Parse("{}").RootElement, CallId = "c0" },
+                new JmapMethodInvocation { Name = "b", Arguments = JsonDocument.Parse("{}").RootElement, CallId = "c1" }
             ]
         };
 
@@ -57,7 +57,7 @@ public class TestJmapRequestConverter
         {
             Using = [JmapCoreCapability.Core],
             MethodCalls = [],
-            CreatedIds = new Dictionary<string, string> { { "clientId1", "serverId1" } }
+            CreatedIds = new Dictionary<string, JmapId> { { "clientId1", (JmapId)"serverId1" } }
         };
 
         var r = JsonSerializer.Serialize(request);
