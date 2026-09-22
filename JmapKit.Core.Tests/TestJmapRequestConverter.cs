@@ -6,19 +6,24 @@ namespace JmapKit.Tests;
 [TestClass]
 public class TestJmapRequestConverter
 {
+    private sealed record TestObject : IJmapObject
+    {
+        public static string JmapName => "TestObject";
+        public static JmapCapability[] JmapCapabilities => [new("urn:test:capability")];
+        public static JmapMethod[] SupportedMethods => [JmapMethod.Get, JmapMethod.Set];
+    }
+
     [TestMethod]
     public void Serialize_ValidRequest_ReturnsRequestString()
     {
-        var invocation = new JmapMethodInvocation
-        {
-            Name = "hello",
-            Arguments = JsonSerializer.SerializeToElement(new Dictionary<string, object?>
+        var invocation = JmapMethodInvocation.Create<JmapCore>(
+            JmapMethod.Echo,
+            JsonSerializer.SerializeToElement(new Dictionary<string, object?>
             {
                 { "arg1", 3 },
                 { "arg2", "foo" },
             }),
-            CallId = "c0"
-        };
+            "c0");
 
         var request = new JmapRequest
         {
@@ -28,7 +33,7 @@ public class TestJmapRequestConverter
 
         var r = JsonSerializer.Serialize(request);
 
-        r.Should().Be("""{"using":["urn:ietf:params:jmap:core"],"methodCalls":[["hello",{"arg1":3,"arg2":"foo"},"c0"]]}""");
+        r.Should().Be("""{"using":["urn:ietf:params:jmap:core"],"methodCalls":[["Core/echo",{"arg1":3,"arg2":"foo"},"c0"]]}""");
     }
 
     [TestMethod]
@@ -39,15 +44,15 @@ public class TestJmapRequestConverter
             Using = [JmapCoreCapability.Core, new JmapCapability("urn:ietf:params:jmap:mail")],
             MethodCalls =
             [
-                new JmapMethodInvocation { Name = "a", Arguments = JsonDocument.Parse("{}").RootElement, CallId = "c0" },
-                new JmapMethodInvocation { Name = "b", Arguments = JsonDocument.Parse("{}").RootElement, CallId = "c1" }
+                JmapMethodInvocation.Create<TestObject>(JmapMethod.Get, JsonDocument.Parse("{}").RootElement, "c0"),
+                JmapMethodInvocation.Create<TestObject>(JmapMethod.Set, JsonDocument.Parse("{}").RootElement, "c1")
             ]
         };
 
         var r = JsonSerializer.Serialize(request);
 
         r.Should().Be(
-            """{"using":["urn:ietf:params:jmap:core","urn:ietf:params:jmap:mail"],"methodCalls":[["a",{},"c0"],["b",{},"c1"]]}""");
+            """{"using":["urn:ietf:params:jmap:core","urn:ietf:params:jmap:mail"],"methodCalls":[["TestObject/get",{},"c0"],["TestObject/set",{},"c1"]]}""");
     }
 
     [TestMethod]

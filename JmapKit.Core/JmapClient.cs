@@ -145,17 +145,14 @@ public sealed class JmapClient : IJmapClient
 
         return response;
     }
-    
-    private async Task<JmapMethodResponse> InvokeSingleAsync<T, TArgs>(string verb, TArgs args, CancellationToken ct)
+
+    private async Task<JmapMethodResponse> InvokeSingleAsync<T, TArgs>(JmapMethod verb, TArgs args, CancellationToken ct)
         where T : IJmapObject
     {
-        var name = $"{T.JmapName}/{verb}";
-        var invocation = new JmapMethodInvocation
-        {
-            Name = name,
-            Arguments = JsonSerializer.SerializeToElement(args, _jsonOptions),
-            CallId = "c0"
-        };
+        var invocation = JmapMethodInvocation.Create<T>(
+            verb,
+            JsonSerializer.SerializeToElement(args, _jsonOptions),
+            "c0");
         var request = new JmapRequest
         {
             Using = T.JmapCapabilities,
@@ -167,40 +164,40 @@ public sealed class JmapClient : IJmapClient
         var methodResponse = response.MethodResponses.SingleOrDefault(r => r.CallId == "c0")
             ?? throw new JmapProtocolException("Server did not return a response for the method call.");
 
-        if (methodResponse.Name != name && !methodResponse.IsError)
+        if (methodResponse.Name != invocation.Name && !methodResponse.IsError)
             throw new JmapProtocolException(
-                $"Expected a '{name}' or 'error' response, but got '{methodResponse.Name}'.");
+                $"Expected a '{invocation.Name}' or 'error' response, but got '{methodResponse.Name}'.");
 
         return methodResponse;
     }
 
     /// <inheritdoc />
     public Task<JmapMethodResponse> EchoAsync<TArgs>(TArgs args, CancellationToken ct = default) =>
-        InvokeSingleAsync<JmapCore, TArgs>("echo", args, ct);
+        InvokeSingleAsync<JmapCore, TArgs>(JmapMethod.Echo, args, ct);
 
     /// <inheritdoc />
     public Task<JmapMethodResponse> GetAsync<T>(JmapGetArguments<T> args, CancellationToken ct = default) where T : IJmapObject =>
-        InvokeSingleAsync<T, JmapGetArguments<T>>("get", args, ct);
+        InvokeSingleAsync<T, JmapGetArguments<T>>(JmapMethod.Get, args, ct);
 
     /// <inheritdoc />
     public Task<JmapMethodResponse> SetAsync<T>(JmapSetArguments<T> args, CancellationToken ct = default) where T : IJmapObject =>
-        InvokeSingleAsync<T, JmapSetArguments<T>>("set", args, ct);
+        InvokeSingleAsync<T, JmapSetArguments<T>>(JmapMethod.Set, args, ct);
 
     /// <inheritdoc />
     public Task<JmapMethodResponse> ChangesAsync<T>(JmapChangesArguments<T> args, CancellationToken ct = default) where T : IJmapObject =>
-        InvokeSingleAsync<T, JmapChangesArguments<T>>("changes", args, ct);
+        InvokeSingleAsync<T, JmapChangesArguments<T>>(JmapMethod.Changes, args, ct);
 
     /// <inheritdoc />
     public Task<JmapMethodResponse> CopyAsync<T>(JmapCopyArguments<T> args, CancellationToken ct = default) where T : IJmapObject =>
-        InvokeSingleAsync<T, JmapCopyArguments<T>>("copy", args, ct);
+        InvokeSingleAsync<T, JmapCopyArguments<T>>(JmapMethod.Copy, args, ct);
 
     /// <inheritdoc />
     public Task<JmapMethodResponse> QueryAsync<T>(JmapQueryArguments<T> args, CancellationToken ct = default) where T : IJmapObject =>
-        InvokeSingleAsync<T, JmapQueryArguments<T>>("query", args, ct);
+        InvokeSingleAsync<T, JmapQueryArguments<T>>(JmapMethod.Query, args, ct);
 
     /// <inheritdoc />
     public Task<JmapMethodResponse> QueryChangesAsync<T>(JmapQueryChangesArguments<T> args, CancellationToken ct = default) where T : IJmapObject =>
-        InvokeSingleAsync<T, JmapQueryChangesArguments<T>>("queryChanges", args, ct);
+        InvokeSingleAsync<T, JmapQueryChangesArguments<T>>(JmapMethod.QueryChanges, args, ct);
 
     private StringContent BuildContent<T>(T payload)
     {

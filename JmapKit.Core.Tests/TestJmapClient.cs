@@ -13,6 +13,15 @@ public class TestJmapClient
     {
         public static string JmapName => "TestObject";
         public static JmapCapability[] JmapCapabilities => [new("urn:test:capability"), new("urn:ietf:params:jmap:core")];
+        public static JmapMethod[] SupportedMethods =>
+        [
+            JmapMethod.Get,
+            JmapMethod.Set,
+            JmapMethod.Changes,
+            JmapMethod.Copy,
+            JmapMethod.Query,
+            JmapMethod.QueryChanges
+        ];
     }
 
     private const string Host = "jmap.example.com";
@@ -99,7 +108,7 @@ public class TestJmapClient
     private static JmapRequest EchoRequest() => new()
     {
         Using = [JmapCoreCapability.Core],
-        MethodCalls = [new JmapMethodInvocation { Name = "Core/echo", Arguments = JsonDocument.Parse("{}").RootElement, CallId = "c0" }]
+        MethodCalls = [JmapMethodInvocation.Create<JmapCore>(JmapMethod.Echo, JsonDocument.Parse("{}").RootElement, "c0")]
     };
 
     [TestMethod]
@@ -483,5 +492,45 @@ public class TestJmapClient
         response.TryDeserialize<JmapQueryChangesResponse<TestObject>>(new JsonSerializerOptions(), out var value, out _)
             .Should().BeTrue();
         value!.NewQueryState.Should().Be("qs2");
+    }
+
+    // ----- Method enforcement -----
+
+    private static FakeHttpMessageHandler CreateNoRequestsExpectedHandler() =>
+        new(request => throw new InvalidOperationException($"Unexpected request to '{request.RequestUri}'."));
+
+    private static IEnumerable<object[]> UnsupportedJmapCoreCalls()
+    {
+        Task Get(JmapClient client) => client.GetAsync(new JmapGetArguments<JmapCore> { AccountId = JmapId.Parse("acc1") });
+        Task Set(JmapClient client) => client.SetAsync(new JmapSetArguments<JmapCore> { AccountId = JmapId.Parse("acc1") });
+        Task Changes(JmapClient client) => client.ChangesAsync(
+            new JmapChangesArguments<JmapCore> { AccountId = JmapId.Parse("acc1"), SinceState = "s1" });
+        Task Copy(JmapClient client) => client.CopyAsync(new JmapCopyArguments<JmapCore>
+        {
+            AccountId = JmapId.Parse("acc1"),
+            FromAccountId = JmapId.Parse("acc1"),
+            Create = new Dictionary<JmapId, JmapCore>()
+        });
+        Task Query(JmapClient client) => client.QueryAsync(new JmapQueryArguments<JmapCore> { AccountId = JmapId.Parse("acc1") });
+        Task QueryChanges(JmapClient client) => client.QueryChangesAsync(
+            new JmapQueryChangesArguments<JmapCore> { AccountId = JmapId.Parse("acc1"), SinceQueryState = "qs1" });
+
+        yield return [nameof(Get), (Func<JmapClient, Task>)Get];
+        yield return [nameof(Set), (Func<JmapClient, Task>)Set];
+        yield return [nameof(Changes), (Func<JmapClient, Task>)Changes];
+        yield return [nameof(Copy), (Func<JmapClient, Task>)Copy];
+        yield return [nameof(Query), (Func<JmapClient, Task>)Query];
+        yield return [nameof(QueryChanges), (Func<JmapClient, Task>)QueryChanges];
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(UnsupportedJmapCoreCalls))]
+    public async Task VerbAsync_MethodNotSupportedByObject_ThrowsWithoutSendingRequest(string _, Func<JmapClient, Task> invoke)
+    {
+        var client = CreateClient(CreateNoRequestsExpectedHandler());
+
+        var act = () => invoke(client);
+
+        await act.Should().ThrowAsync<JmapUnsupportedMethodException>();
     }
 }
