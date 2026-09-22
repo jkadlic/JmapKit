@@ -349,9 +349,8 @@ public class TestJmapId
     [TestMethod]
     public void OrderBy_SortsIdsOrdinally()
     {
-        var ids = new[] { "banana", "Banana", "-banana", "1banana", "_banana" }
-            .Select(JmapId.Parse)
-            .ToList();
+        string[] sourceArray = ["banana", "Banana", "-banana", "1banana", "_banana"];
+        var ids = sourceArray.Select(JmapId.Parse).ToList();
 
         var sorted = ids.OrderBy(id => id).Select(id => id.ToString()).ToList();
 
@@ -361,17 +360,19 @@ public class TestJmapId
     [TestMethod]
     public void Distinct_RemovesValueEqualIds()
     {
-        var ids = new[] { "a", "b", "a", "c", "b" }.Select(JmapId.Parse);
+        string[] sourceArray = ["a", "b", "a", "c", "b"];
+        var ids = sourceArray.Select(JmapId.Parse);
 
         var distinct = ids.Distinct().Select(id => id.ToString()).ToList();
 
-        distinct.Should().BeEquivalentTo(new[] { "a", "b", "c" });
+        distinct.Should().BeEquivalentTo(["a", "b", "c"]);
     }
 
     [TestMethod]
     public void Distinct_TreatsDifferentCaseAsDistinct()
     {
-        var ids = new[] { "abc", "ABC" }.Select(JmapId.Parse);
+        string[] sourceArray = ["abc", "ABC"];
+        var ids = sourceArray.Select(JmapId.Parse);
 
         var distinct = ids.Distinct();
 
@@ -397,7 +398,8 @@ public class TestJmapId
     [TestMethod]
     public void Contains_FindsValueEqualId()
     {
-        var ids = new[] { "a", "b", "c" }.Select(JmapId.Parse).ToList();
+        string[] sourceArray = ["a", "b", "c"];
+        var ids = sourceArray.Select(JmapId.Parse).ToList();
 
         ids.Contains(JmapId.Parse("b")).Should().BeTrue();
         ids.Contains(JmapId.Parse("z")).Should().BeFalse();
@@ -406,7 +408,8 @@ public class TestJmapId
     [TestMethod]
     public void Select_CastsIdsToStrings()
     {
-        var ids = new[] { "a", "b", "c" }.Select(JmapId.Parse).ToList();
+        string[] sourceArray = ["a", "b", "c"];
+        var ids = sourceArray.Select(JmapId.Parse).ToList();
 
         var strings = ids.Select(id => (string)id).ToList();
 
@@ -416,9 +419,10 @@ public class TestJmapId
     [TestMethod]
     public void Where_FiltersUsingImplicitCast()
     {
-        var ids = new[] { "a1", "b2", "a3" }.Select(JmapId.Parse).ToList();
+        string[] sourceArray = ["a1", "b2", "a3"];
+        var ids = sourceArray.Select(JmapId.Parse).ToList();
 
-        var filtered = ids.Where(id => ((string)id).StartsWith("a")).ToList();
+        var filtered = ids.Where(id => ((string)id).StartsWith('a')).ToList();
 
         filtered.Should().HaveCount(2);
     }
@@ -426,7 +430,8 @@ public class TestJmapId
     [TestMethod]
     public void ToDictionary_LookupByValueEqualId_Succeeds()
     {
-        var ids = new[] { "a", "b", "c" }.Select(JmapId.Parse).ToList();
+        string[] sourceArray = ["a", "b", "c"];
+        var ids = sourceArray.Select(JmapId.Parse).ToList();
         var lookup = ids.ToDictionary(id => id, id => id.ToString().ToUpperInvariant());
 
         lookup[JmapId.Parse("b")].Should().Be("B");
@@ -435,7 +440,8 @@ public class TestJmapId
     [TestMethod]
     public void ToHashSet_DeduplicatesValueEqualIds()
     {
-        var ids = new[] { "a", "b", "a", "c" }.Select(JmapId.Parse);
+        string[] sourceArray = ["a", "b", "a", "c"];
+        var ids = sourceArray.Select(JmapId.Parse);
 
         var set = ids.ToHashSet();
 

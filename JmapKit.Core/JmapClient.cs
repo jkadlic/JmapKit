@@ -158,7 +158,7 @@ public sealed class JmapClient : IJmapClient
         };
         var request = new JmapRequest
         {
-            Using = T.Using,
+            Using = T.JmapCapabilities,
             MethodCalls = [invocation]
         };
 

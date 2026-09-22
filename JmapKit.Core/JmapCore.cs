@@ -9,9 +9,9 @@ public sealed class JmapCore : IJmapObject
     /// Name of the JMAP object type.
     /// </summary>
     public static string JmapName { get; } = "Core";
-    
+
     /// <summary>
     /// Array of capabilities required to make queries against this type of JMAP object.
     /// </summary>
-    public static JmapCapability[] Using { get; } = [JmapCoreCapability.Core];
+    public static JmapCapability[] JmapCapabilities { get; } = [JmapCoreCapability.Core];
 }

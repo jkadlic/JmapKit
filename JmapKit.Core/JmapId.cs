@@ -13,7 +13,7 @@ public readonly struct JmapId : IEquatable<JmapId>, IComparable<JmapId>
     /// The minimum length in octets for an id.
     /// </summary>
     public const int MinLengthOctets = 1;
-    
+
     /// <summary>
     /// The maximum length in octets for an id.
     /// </summary>
@@ -41,7 +41,7 @@ public readonly struct JmapId : IEquatable<JmapId>, IComparable<JmapId>
         result = default;
         return false;
     }
-    
+
     /// <summary>
     /// Attempts to parse a string into a <see cref="JmapId"/> and throws on failure. Returns the parsed
     /// <see cref="JmapId"/> if the operation was successful, otherwise throws <see cref="FormatException"/>.
@@ -71,26 +71,26 @@ public readonly struct JmapId : IEquatable<JmapId>, IComparable<JmapId>
                 (c >= '0' && c <= '9') ||
                 c == '-' ||
                 c == '_';
- 
+
             if (!isValid)
             {
                 return false;
             }
         }
- 
+
         return true;
     }
-    
+
     /// inheritdoc
     public override string ToString() => _value ?? string.Empty;
-    
+
     /// <summary>
     /// Maps an attempted cast form <see cref="JmapId"/> to <see cref="string"/> to a ToString call.
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
     public static implicit operator string(JmapId id) => id.ToString();
-    
+
     /// <summary>
     /// Maps an attempted cast from <see cref="string"/> to <see cref="JmapId"/> to an explicit parse operation. Needs
     /// an explicit mapping because not all strings are valid JMAP id's.
@@ -110,6 +110,42 @@ public readonly struct JmapId : IEquatable<JmapId>, IComparable<JmapId>
 
     /// inheritdoc
     public int CompareTo(JmapId other) => string.CompareOrdinal(_value, other._value);
+
+    /// inheritdoc
+    public static bool operator ==(JmapId left, JmapId right)
+    {
+        return left.Equals(right);
+    }
+
+    /// inheritdoc
+    public static bool operator !=(JmapId left, JmapId right)
+    {
+        return !(left == right);
+    }
+
+    /// inheritdoc
+    public static bool operator <(JmapId left, JmapId right)
+    {
+        return left.CompareTo(right) < 0;
+    }
+
+    /// inheritdoc
+    public static bool operator <=(JmapId left, JmapId right)
+    {
+        return left.CompareTo(right) <= 0;
+    }
+
+    /// inheritdoc
+    public static bool operator >(JmapId left, JmapId right)
+    {
+        return left.CompareTo(right) > 0;
+    }
+
+    /// inheritdoc
+    public static bool operator >=(JmapId left, JmapId right)
+    {
+        return left.CompareTo(right) >= 0;
+    }
 }
 
 /// <summary>

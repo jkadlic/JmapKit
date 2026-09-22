@@ -14,5 +14,5 @@ public interface IJmapObject
     /// <summary>
     /// The capability URIs required to use this data type. Sent verbatim as the request's "using" property.
     /// </summary>
-    static abstract JmapCapability[] Using { get; }
+    static abstract JmapCapability[] JmapCapabilities { get; }
 }
