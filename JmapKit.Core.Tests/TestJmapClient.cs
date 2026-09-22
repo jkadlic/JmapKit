@@ -12,7 +12,7 @@ public class TestJmapClient
     private sealed record TestObject : IJmapObject
     {
         public static string JmapName => "TestObject";
-        public static JmapCapability[] Using => [new("urn:test:capability"), new("urn:ietf:params:jmap:core")];
+        public static JmapCapability[] JmapCapabilities => [new("urn:test:capability"), new("urn:ietf:params:jmap:core")];
     }
 
     private const string Host = "jmap.example.com";

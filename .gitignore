@@ -1,8 +1,26 @@
+# Build output
 bin/
 obj/
 /packages/
+/artifacts/
+
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+
+# Rider
 riderModule.iml
 /_ReSharper.Caches/
 .idea/
+
+# VS Code
+.vscode/
+
+# Test results
+TestResults/
+
+# Environment / OS
 .env
 .DS_Store

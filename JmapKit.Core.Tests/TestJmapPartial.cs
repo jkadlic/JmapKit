@@ -16,7 +16,7 @@ public sealed class TestJmapPartial
     private sealed record TestObject : IJmapObject
     {
         public static string JmapName => "TestObject";
-        public static JmapCapability[] Using => [new("urn:test:capability")];
+        public static JmapCapability[] JmapCapabilities => [new("urn:test:capability")];
 
         public string? Name { get; init; }
         public long? Count { get; init; }
