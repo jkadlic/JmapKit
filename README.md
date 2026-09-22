@@ -125,6 +125,33 @@ else
 shape. For anything not covered by the typed helpers, build a `JmapRequest` directly and send it
 with `InvokeAsync`.
 
+Building a `JmapRequest` directly allows sending multiple calls in a single batch, while targeting
+different IJmapObject's. This interface also returns the entire `JmapResponse` object.
+
+> Note: This library does not yet have explicit support for chaining methods together in a batch. However, that would not
+stop a JMAP server from returning chained responses if the correct arguments were passed.
+
+```csharp
+var request = new JmapRequest
+{
+    Using = [JmapCoreCapability.Core, new("urn:ietf:params:jmap:mail")],
+    MethodCalls =
+    [
+        JmapMethodInvocation.Create<JmapCore>(
+            JmapMethod.Echo,
+            JsonSerializer.SerializeToElement(new Dictionary<string, string> { ["hello"] = "world" }),
+            "c0"),
+        JmapMethodInvocation.Create<Mailbox>(
+            JmapMethod.Get,
+            JsonSerializer.SerializeToElement(new JmapGetArguments<Mailbox> { AccountId = JmapId.Parse("u1234567") }),
+            "c1")
+    ]
+};
+
+var response = await jmap.InvokeAsync(request);
+var mailboxResult = response.MethodResponses.Single(r => r.CallId == "c1");
+```
+
 ### Error handling
 
 All exceptions thrown by JmapKit derive from `JmapException`:
