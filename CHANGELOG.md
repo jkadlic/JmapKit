@@ -11,3 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Session discovery, bearer token authentication, and typed JMAP method support
   (`get`, `set`, `changes`, `copy`, `query`, `queryChanges`, `echo`) per RFC 8620.
+- `IJmapObject.SupportedMethods`, declaring which JMAP methods a data type supports per
+  RFC 8620 §2. `JmapMethodInvocation.Create<T>` validates against it and throws
+  `JmapUnsupportedMethodException` for an unsupported method, so an invalid call fails before
+  any request is sent.

@@ -73,19 +73,24 @@ Console.WriteLine(session.State);
 ### Defining JMAP data types
 
 Typed method calls (`GetAsync`, `SetAsync`, `QueryAsync`, ...) work against any type that
-implements `IJmapObject`, declaring the JMAP object name and the capabilities required to use it:
+implements `IJmapObject`, declaring the JMAP object name, the capabilities required to use it, and
+which methods it supports ([RFC 8620 §2](https://www.rfc-editor.org/rfc/rfc8620#section-2)):
 
 ```csharp
 public sealed record Mailbox : IJmapObject
 {
     public static string JmapName => "Mailbox";
-    public static JmapCapability[] Using => [JmapCoreCapability.Core, new("urn:ietf:params:jmap:mail")];
+    public static JmapCapability[] JmapCapabilities => [JmapCoreCapability.Core, new("urn:ietf:params:jmap:mail")];
+    public static JmapMethod[] SupportedMethods => [JmapMethod.Get, JmapMethod.Set, JmapMethod.Changes];
 
     public JmapId Id { get; init; }
     public string? Name { get; init; }
     public long TotalEmails { get; init; }
 }
 ```
+
+Calling a typed method not listed in `SupportedMethods` (e.g. `QueryAsync<Mailbox>` above) throws
+`JmapUnsupportedMethodException` before any request is sent.
 
 ### Making requests
 
@@ -129,6 +134,7 @@ All exceptions thrown by JmapKit derive from `JmapException`:
 | `JmapProtocolException`        | The server didn't behave as RFC 8620 expects (bad session response, missing/unexpected method response, unparsable body). |
 | `JmapConfigurationException`   | The default `JmapClientOptions()` constructor ran without `JMAP_HOST` set.  |
 | `JmapCredentialException`      | The default `JmapTokenCredential()` constructor ran without `JMAP_TOKEN` set. |
+| `JmapUnsupportedMethodException` | A typed method call was made against an `IJmapObject` that doesn't declare it in `SupportedMethods`. |
 
 Method-level JMAP errors (RFC 8620 §3.6.1) don't throw — they're returned via the `error` out
 parameter of `TryDeserialize<T>` as a `JmapMethodError`.
