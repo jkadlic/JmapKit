@@ -5,13 +5,12 @@ namespace JmapKit;
 /// </summary>
 public sealed class JmapCore : IJmapObject
 {
-    /// <summary>
-    /// Name of the JMAP object type.
-    /// </summary>
+    /// <inheritdoc />
     public static string JmapName { get; } = "Core";
 
-    /// <summary>
-    /// Array of capabilities required to make queries against this type of JMAP object.
-    /// </summary>
+    /// <inheritdoc />
     public static JmapCapability[] JmapCapabilities { get; } = [JmapCoreCapability.Core];
+
+    /// <inheritdoc />
+    public static JmapMethod[] SupportedMethods { get; } = [JmapMethod.Echo];
 }

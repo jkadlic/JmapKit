@@ -50,6 +50,9 @@ public interface IJmapClient
     /// <param name="ct">A token to cancel the operation.</param>
     /// <returns>The method response.</returns>
     /// <exception cref="JmapProtocolException">The server did not behave as the JMAP spec expects.</exception>
+    /// <exception cref="JmapUnsupportedMethodException">
+    /// <typeparamref name="T"/> does not declare support for "get" via <see cref="IJmapObject.SupportedMethods"/>.
+    /// </exception>
     Task<JmapMethodResponse> GetAsync<T>(JmapGetArguments<T> args, CancellationToken ct = default) where T : IJmapObject;
 
     /// <summary>
@@ -60,6 +63,9 @@ public interface IJmapClient
     /// <param name="ct">A token to cancel the operation.</param>
     /// <returns>The method response.</returns>
     /// <exception cref="JmapProtocolException">The server did not behave as the JMAP spec expects.</exception>
+    /// <exception cref="JmapUnsupportedMethodException">
+    /// <typeparamref name="T"/> does not declare support for "set" via <see cref="IJmapObject.SupportedMethods"/>.
+    /// </exception>
     Task<JmapMethodResponse> SetAsync<T>(JmapSetArguments<T> args, CancellationToken ct = default) where T : IJmapObject;
 
     /// <summary>
@@ -70,6 +76,9 @@ public interface IJmapClient
     /// <param name="ct">A token to cancel the operation.</param>
     /// <returns>The method response.</returns>
     /// <exception cref="JmapProtocolException">The server did not behave as the JMAP spec expects.</exception>
+    /// <exception cref="JmapUnsupportedMethodException">
+    /// <typeparamref name="T"/> does not declare support for "changes" via <see cref="IJmapObject.SupportedMethods"/>.
+    /// </exception>
     Task<JmapMethodResponse> ChangesAsync<T>(JmapChangesArguments<T> args, CancellationToken ct = default) where T : IJmapObject;
 
     /// <summary>
@@ -80,6 +89,9 @@ public interface IJmapClient
     /// <param name="ct">A token to cancel the operation.</param>
     /// <returns>The method response.</returns>
     /// <exception cref="JmapProtocolException">The server did not behave as the JMAP spec expects.</exception>
+    /// <exception cref="JmapUnsupportedMethodException">
+    /// <typeparamref name="T"/> does not declare support for "copy" via <see cref="IJmapObject.SupportedMethods"/>.
+    /// </exception>
     Task<JmapMethodResponse> CopyAsync<T>(JmapCopyArguments<T> args, CancellationToken ct = default) where T : IJmapObject;
 
     /// <summary>
@@ -90,6 +102,9 @@ public interface IJmapClient
     /// <param name="ct">A token to cancel the operation.</param>
     /// <returns>The method response.</returns>
     /// <exception cref="JmapProtocolException">The server did not behave as the JMAP spec expects.</exception>
+    /// <exception cref="JmapUnsupportedMethodException">
+    /// <typeparamref name="T"/> does not declare support for "query" via <see cref="IJmapObject.SupportedMethods"/>.
+    /// </exception>
     Task<JmapMethodResponse> QueryAsync<T>(JmapQueryArguments<T> args, CancellationToken ct = default) where T : IJmapObject;
 
     /// <summary>
@@ -100,5 +115,8 @@ public interface IJmapClient
     /// <param name="ct">A token to cancel the operation.</param>
     /// <returns>The method response.</returns>
     /// <exception cref="JmapProtocolException">The server did not behave as the JMAP spec expects.</exception>
+    /// <exception cref="JmapUnsupportedMethodException">
+    /// <typeparamref name="T"/> does not declare support for "queryChanges" via <see cref="IJmapObject.SupportedMethods"/>.
+    /// </exception>
     Task<JmapMethodResponse> QueryChangesAsync<T>(JmapQueryChangesArguments<T> args, CancellationToken ct = default) where T : IJmapObject;
 }

@@ -11,6 +11,7 @@ public sealed record TestObject : IJmapObject
 {
     public static string JmapName => "TestObject";
     public static JmapCapability[] JmapCapabilities => [new("urn:test:capability")];
+    public static JmapMethod[] SupportedMethods => [];
 
     public string? Name { get; init; }
 }

@@ -73,19 +73,24 @@ Console.WriteLine(session.State);
 ### Defining JMAP data types
 
 Typed method calls (`GetAsync`, `SetAsync`, `QueryAsync`, ...) work against any type that
-implements `IJmapObject`, declaring the JMAP object name and the capabilities required to use it:
+implements `IJmapObject`, declaring the JMAP object name, the capabilities required to use it, and
+which methods it supports ([RFC 8620 §2](https://www.rfc-editor.org/rfc/rfc8620#section-2)):
 
 ```csharp
 public sealed record Mailbox : IJmapObject
 {
     public static string JmapName => "Mailbox";
-    public static JmapCapability[] Using => [JmapCoreCapability.Core, new("urn:ietf:params:jmap:mail")];
+    public static JmapCapability[] JmapCapabilities => [JmapCoreCapability.Core, new("urn:ietf:params:jmap:mail")];
+    public static JmapMethod[] SupportedMethods => [JmapMethod.Get, JmapMethod.Set, JmapMethod.Changes];
 
     public JmapId Id { get; init; }
     public string? Name { get; init; }
     public long TotalEmails { get; init; }
 }
 ```
+
+Calling a typed method not listed in `SupportedMethods` (e.g. `QueryAsync<Mailbox>` above) throws
+`JmapUnsupportedMethodException` before any request is sent.
 
 ### Making requests
 
@@ -120,6 +125,33 @@ else
 shape. For anything not covered by the typed helpers, build a `JmapRequest` directly and send it
 with `InvokeAsync`.
 
+Building a `JmapRequest` directly allows sending multiple calls in a single batch, while targeting
+different IJmapObject's. This interface also returns the entire `JmapResponse` object.
+
+> Note: This library does not yet have explicit support for chaining methods together in a batch. However, that would not
+stop a JMAP server from returning chained responses if the correct arguments were passed.
+
+```csharp
+var request = new JmapRequest
+{
+    Using = [JmapCoreCapability.Core, new("urn:ietf:params:jmap:mail")],
+    MethodCalls =
+    [
+        JmapMethodInvocation.Create<JmapCore>(
+            JmapMethod.Echo,
+            JsonSerializer.SerializeToElement(new Dictionary<string, string> { ["hello"] = "world" }),
+            "c0"),
+        JmapMethodInvocation.Create<Mailbox>(
+            JmapMethod.Get,
+            JsonSerializer.SerializeToElement(new JmapGetArguments<Mailbox> { AccountId = JmapId.Parse("u1234567") }),
+            "c1")
+    ]
+};
+
+var response = await jmap.InvokeAsync(request);
+var mailboxResult = response.MethodResponses.Single(r => r.CallId == "c1");
+```
+
 ### Error handling
 
 All exceptions thrown by JmapKit derive from `JmapException`:
@@ -129,6 +161,7 @@ All exceptions thrown by JmapKit derive from `JmapException`:
 | `JmapProtocolException`        | The server didn't behave as RFC 8620 expects (bad session response, missing/unexpected method response, unparsable body). |
 | `JmapConfigurationException`   | The default `JmapClientOptions()` constructor ran without `JMAP_HOST` set.  |
 | `JmapCredentialException`      | The default `JmapTokenCredential()` constructor ran without `JMAP_TOKEN` set. |
+| `JmapUnsupportedMethodException` | A typed method call was made against an `IJmapObject` that doesn't declare it in `SupportedMethods`. |
 
 Method-level JMAP errors (RFC 8620 §3.6.1) don't throw — they're returned via the `error` out
 parameter of `TryDeserialize<T>` as a `JmapMethodError`.

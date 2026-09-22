@@ -13,17 +13,44 @@ public sealed class JmapMethodInvocation
     /// <summary>
     /// The method name, e.g. <c>Core/echo</c>
     /// </summary>
-    public required string Name { get; init; }
+    public string Name { get; }
 
     /// <summary>
     /// The method's arguments.
     /// </summary>
-    public required JsonElement Arguments { get; init; }
+    public JsonElement Arguments { get; }
 
     /// <summary>
     /// A client-assigned id used to match this call to its <see cref="JmapMethodResponse"/>.
     /// </summary>
-    public required string CallId { get; init; }
+    public string CallId { get; }
+
+    private JmapMethodInvocation(string name, JsonElement arguments, string callId)
+    {
+        Name = name;
+        Arguments = arguments;
+        CallId = callId;
+    }
+
+    /// <summary>
+    /// Creates a <see cref="JmapMethodInvocation"/> calling "<typeparamref name="T"/>/<paramref name="method"/>".
+    /// </summary>
+    /// <typeparam name="T">Type of <see cref="IJmapObject"/> being referenced.</typeparam>
+    /// <param name="method">The method to call.</param>
+    /// <param name="arguments">The method's arguments.</param>
+    /// <param name="callId">A client-assigned id used to match this call to its <see cref="JmapMethodResponse"/>.</param>
+    /// <exception cref="JmapUnsupportedMethodException">
+    /// <typeparamref name="T"/> does not declare support for <paramref name="method"/> via
+    /// <see cref="IJmapObject.SupportedMethods"/>.
+    /// </exception>
+    public static JmapMethodInvocation Create<T>(JmapMethod method, JsonElement arguments, string callId)
+        where T : IJmapObject
+    {
+        if (!T.SupportedMethods.Contains(method))
+            throw new JmapUnsupportedMethodException(T.JmapName, method);
+
+        return new JmapMethodInvocation($"{T.JmapName}/{method.MapToMethodString()}", arguments, callId);
+    }
 }
 
 /// <summary>
