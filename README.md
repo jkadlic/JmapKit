@@ -135,7 +135,8 @@ parameter of `TryDeserialize<T>` as a `JmapMethodError`.
 
 ## Contributing
 
-Issues and pull requests are welcome.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build,
+test, and format your changes.
 
 ## License
 

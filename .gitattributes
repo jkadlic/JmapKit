@@ -1,0 +1,12 @@
+# Normalize line endings for all text files
+* text=auto eol=lf
+
+# Never let git touch line endings for binary-ish/generated files
+*.snk binary
+*.png binary
+*.jpg binary
+*.ico binary
+
+# Windows-specific scripts should keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
