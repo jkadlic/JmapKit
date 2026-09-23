@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   payload than the client used for everything else.
 - **Breaking:** `JmapClient`'s constructor takes a `JmapSerializerOptions`. Registration via
   `AddJmapClient` is unaffected.
+- **Breaking:** `JmapPartial<T>.MergeOnto` no longer takes a `JsonSerializerOptions` parameter. It
+  uses the options the partial was read with, so the server's properties are matched against
+  `T` under the same configuration they arrived in.
 
 ### Fixed
 

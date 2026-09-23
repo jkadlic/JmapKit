@@ -12,22 +12,33 @@ namespace JmapKit;
 public sealed class JmapPartial<T>
 {
 	private readonly JsonObject _properties;
+	private readonly JsonSerializerOptions? _options;
 
-	internal JmapPartial(JsonObject properties) => _properties = properties;
+	internal JmapPartial(JsonObject properties, JsonSerializerOptions? options = null)
+	{
+		_properties = properties;
+		_options = options;
+	}
 
 	/// <summary>
 	/// Merges the properties returned by the server onto <paramref name="original"/>, producing the complete
 	/// <typeparamref name="T"/> as it now exists on the server.
 	/// </summary>
+	/// <remarks>
+	/// Uses the options this partial was read with, so <typeparamref name="T"/> is written and read back with
+	/// the same configuration the server's properties arrived under. That matters here more than elsewhere:
+	/// the merge matches the server's property names against the serialized <typeparamref name="T"/> by name,
+	/// so a mismatch adds keys alongside the originals instead of overwriting them, and the server's changes
+	/// are dropped on the way back without anything being thrown.
+	/// </remarks>
 	/// <param name="original">
 	/// The object as the client last knew it, e.g. the object passed to <c>Create</c>.
 	/// </param>
-	/// <param name="options">
-	/// The <see cref="JsonSerializerOptions"/> used to communicate with the JMAP server.
-	/// </param>
 	/// <returns>A complete <typeparamref name="T"/> combining <paramref name="original"/> with the server's changes.</returns>
-	public T MergeOnto(T original, JsonSerializerOptions options)
+	public T MergeOnto(T original)
 	{
+		var options = _options ?? JmapJson.Default;
+
 		var node = JsonSerializer.SerializeToNode(original, options)?.AsObject()
 			?? throw new JsonException($"Failed to serialize '{typeof(T)}' while merging a {nameof(JmapPartial<T>)}.");
 
@@ -68,7 +79,7 @@ public sealed class JmapPartialConverter<T> : JsonConverter<JmapPartial<T>>
 		if (JsonNode.Parse(ref reader) is not JsonObject properties)
 			throw new JsonException($"Expected a JSON object for a {nameof(JmapPartial<T>)} value.");
 
-		return new JmapPartial<T>(properties);
+		return new JmapPartial<T>(properties, options);
 	}
 
 	/// <inheritdoc />

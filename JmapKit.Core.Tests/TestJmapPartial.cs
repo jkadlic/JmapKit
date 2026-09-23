@@ -35,7 +35,7 @@ public sealed class TestJmapPartial
         var original = new TestObject { Name = "original" };
         var partial = Parse("""{"Count":3}""");
 
-        var merged = partial.MergeOnto(original, Options);
+        var merged = partial.MergeOnto(original);
 
         merged.Name.Should().Be("original");
         merged.Count.Should().Be(3);
@@ -47,7 +47,7 @@ public sealed class TestJmapPartial
         var original = new TestObject { Name = "original" };
         var partial = Parse("""{"Name":"server"}""");
 
-        var merged = partial.MergeOnto(original, Options);
+        var merged = partial.MergeOnto(original);
 
         merged.Name.Should().Be("server");
     }
@@ -58,7 +58,7 @@ public sealed class TestJmapPartial
         var original = new TestObject { Name = "original", Count = 1, Flag = true };
         var partial = Parse("{}");
 
-        var merged = partial.MergeOnto(original, Options);
+        var merged = partial.MergeOnto(original);
 
         merged.Should().Be(original);
     }
@@ -69,7 +69,7 @@ public sealed class TestJmapPartial
         var original = new TestObject { Name = "original" };
         var partial = Parse("""{"Name":null}""");
 
-        var merged = partial.MergeOnto(original, Options);
+        var merged = partial.MergeOnto(original);
 
         merged.Name.Should().BeNull();
     }
@@ -81,8 +81,8 @@ public sealed class TestJmapPartial
         var first = new TestObject { Count = 1 };
         var second = new TestObject { Count = 2 };
 
-        var mergedFirst = partial.MergeOnto(first, Options);
-        var mergedSecond = partial.MergeOnto(second, Options);
+        var mergedFirst = partial.MergeOnto(first);
+        var mergedSecond = partial.MergeOnto(second);
 
         mergedFirst.Count.Should().Be(1);
         mergedSecond.Count.Should().Be(2);
@@ -90,16 +90,25 @@ public sealed class TestJmapPartial
         mergedSecond.Name.Should().Be("server");
     }
 
+    /// <summary>
+    /// The merge matches the server's property names against the serialized <c>TestObject</c> by name, so if
+    /// it used different options than the partial was read with, the server's keys would land beside the
+    /// originals rather than overwriting them — and be dropped again on the way back, without throwing.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately uses <see cref="Options"/>, which has no naming policy, against a PascalCase payload.
+    /// The library's fallback options apply camelCase, so this only passes if the merge really did use the
+    /// options the partial was read with rather than that fallback.
+    /// </remarks>
     [TestMethod]
-    public void MergeOnto_UsesProvidedSerializerOptions()
+    public void MergeOnto_UsesTheOptionsThePartialWasReadWith()
     {
-        var options = new JsonSerializerOptions();
-        options.Converters.Add(new JsonStringEnumConverter());
-        var partial = JsonSerializer.Deserialize<JmapPartial<TestObject>>("""{"Count":5}""", options)!;
-        var original = new TestObject();
+        var partial = JsonSerializer.Deserialize<JmapPartial<TestObject>>("""{"Name":"server"}""", Options)!;
+        var original = new TestObject { Name = "original", Count = 1 };
 
-        var act = () => partial.MergeOnto(original, options);
+        var merged = partial.MergeOnto(original);
 
-        act.Should().NotThrow();
+        merged.Name.Should().Be("server", "the server's value should have overwritten the original");
+        merged.Count.Should().Be(1, "properties the server did not send should survive the merge");
     }
 }

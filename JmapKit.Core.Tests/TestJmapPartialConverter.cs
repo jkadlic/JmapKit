@@ -65,7 +65,7 @@ public sealed class TestJmapPartialConverter
         var partial = JsonSerializer.Deserialize<JmapPartial<TestObject>>("""{"Name":"server"}""", Options);
 
         partial.Should().NotBeNull();
-        partial!.MergeOnto(new TestObject(), Options).Name.Should().Be("server");
+        partial!.MergeOnto(new TestObject()).Name.Should().Be("server");
     }
 
     [TestMethod]
@@ -74,7 +74,7 @@ public sealed class TestJmapPartialConverter
         var partial = JsonSerializer.Deserialize<JmapPartial<TestObject>>("{}", Options);
         var original = new TestObject { Name = "unchanged" };
 
-        partial!.MergeOnto(original, Options).Should().Be(original);
+        partial!.MergeOnto(original).Should().Be(original);
     }
 
     [TestMethod]
@@ -117,6 +117,6 @@ public sealed class TestJmapPartialConverter
 
         dict.Should().NotBeNull();
         dict!.Should().ContainKey(JmapId.Parse("cid1"));
-        dict[JmapId.Parse("cid1")].MergeOnto(new TestObject(), Options).Name.Should().Be("server-assigned");
+        dict[JmapId.Parse("cid1")].MergeOnto(new TestObject()).Name.Should().Be("server-assigned");
     }
 }
