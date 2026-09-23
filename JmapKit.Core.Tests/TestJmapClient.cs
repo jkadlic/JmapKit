@@ -418,7 +418,9 @@ public class TestJmapClient
         using var doc = JsonDocument.Parse(body);
         var sort = doc.RootElement.GetProperty("methodCalls")[0][1].GetProperty("sort")[0];
 
-        sort.GetRawText().Should().Be("""{"property":"name","isAscending":false,"collation":null}""");
+        // No "collation": it is typed "String" with a server-dependent default rather than "String|null"
+        // (RFC 8620 §5.5), so an unset collation is omitted rather than sent as null.
+        sort.GetRawText().Should().Be("""{"property":"name","isAscending":false}""");
     }
 
     [TestMethod]

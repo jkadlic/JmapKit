@@ -26,6 +26,13 @@ public sealed record JmapComparator
 	/// <see href="https://www.rfc-editor.org/rfc/rfc4790">RFC 4790</see>, for the algorithm used to compare
 	/// <see cref="Property"/> values when sorting. If omitted, the default collation for the property is used.
 	/// </summary>
+	/// <remarks>
+	/// Omitted from the wire when null rather than sent as null: unlike most JMAP arguments this one is typed
+	/// "String" with a server-dependent default, not "String|null"
+	/// (<see href="https://www.rfc-editor.org/rfc/rfc8620#section-5.5">RFC 8620 §5.5</see>), so null is not a
+	/// legal value for it. §3.5 allows omitting it precisely because that default is defined.
+	/// </remarks>
 	[JsonPropertyName("collation")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string? Collation { get; init; }
 }
