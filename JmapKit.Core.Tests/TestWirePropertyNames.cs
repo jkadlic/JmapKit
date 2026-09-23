@@ -19,6 +19,7 @@ public sealed class TestWirePropertyNames
     {
         [typeof(JmapClientOptions)] = "client configuration, never serialized",
         [typeof(JmapTokenCredential)] = "credential holder, never serialized",
+        [typeof(JmapSerializerOptions)] = "serializer configuration, never serialized",
     };
 
     private static IEnumerable<Type> WireTypes() =>

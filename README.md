@@ -90,11 +90,10 @@ public sealed record Mailbox : IJmapObject
 ```
 
 Name every serialized property with `[JsonPropertyName]`. JMAP property names are fixed literals defined by
-the spec rather than a transform of a C# identifier, and [RFC 8620
+the relevant RFC rather than a transform of a C# identifier, and [RFC 8620
 §1.1](https://www.rfc-editor.org/rfc/rfc8620#section-1.1) matches them case sensitively — so a name that
-doesn't match exactly is an unrecognised property, not a differently cased one. Properties left unannotated
-fall back to the camelCase policy JmapKit applies to its own traffic, which is correct for most names but is
-an inference rather than a guarantee.
+doesn't match exactly is an unrecognised property, not a differently cased one. See
+[JSON handling](docs/json-handling.md) for custom converters and serializer configuration.
 
 Calling a typed method not listed in `SupportedMethods` (e.g. `QueryAsync<Mailbox>` above) throws
 `JmapUnsupportedMethodException` before any request is sent.
@@ -104,25 +103,20 @@ Calling a typed method not listed in `SupportedMethods` (e.g. `QueryAsync<Mailbo
 `Core/echo` needs no data type, so it's a convenient way to check that a call round-trips:
 
 ```csharp
-// JsonSerializerOptions caches type metadata per instance, so reuse one rather than
-// constructing it per call.
-private static readonly JsonSerializerOptions JsonOptions = new();
-
 var echo = await jmap.EchoAsync(new Dictionary<string, string> { ["hello"] = "world" });
-echo.TryDeserialize<Dictionary<string, string>>(JsonOptions, out var echoResult, out _);
+echo.TryDeserialize<Dictionary<string, string>>(out var echoResult, out _);
 
 Console.WriteLine(echoResult!["hello"]); // "world"
 ```
 
 Typed calls take a typed arguments record and return a `JmapMethodResponse`, deserialized with
-`TryDeserialize<T>` into either the matching typed response record or a `JmapMethodError`. Because the types
-name their own properties, these options only need to carry converters your own types require:
+`TryDeserialize<T>` into either the matching typed response record or a `JmapMethodError`:
 
 ```csharp
 var args = new JmapGetArguments<Mailbox> { AccountId = JmapId.Parse("u1234567") };
 var response = await jmap.GetAsync(args);
 
-if (response.TryDeserialize<JmapGetResponse<Mailbox>>(JsonOptions, out var result, out var error))
+if (response.TryDeserialize<JmapGetResponse<Mailbox>>(out var result, out var error))
 {
     foreach (var mailbox in result.List)
         Console.WriteLine($"{mailbox.Name}: {mailbox.TotalEmails} emails");

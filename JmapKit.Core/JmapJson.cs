@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace JmapKit;
 
 /// <summary>
-/// The serializer options used for all JMAP traffic.
+/// The library's own serializer defaults, before any caller configuration is applied.
 /// </summary>
 /// <remarks>
 /// JMAP property names are fixed literals defined by the relevant RFC, not a transform of a C# identifier
@@ -16,10 +16,14 @@ namespace JmapKit;
 internal static class JmapJson
 {
     /// <summary>
-    /// The shared options instance. <see cref="JsonSerializerOptions"/> caches type metadata per instance and
-    /// becomes read-only on first use, so this is deliberately created once rather than per call.
+    /// A shared instance carrying the library defaults, used when no configured instance is reachable.
     /// </summary>
-    public static JsonSerializerOptions Default { get; } = new()
+    public static JsonSerializerOptions Default { get; } = Create();
+
+    /// <summary>
+    /// Creates a fresh <see cref="JsonSerializerOptions"/> carrying the library defaults.
+    /// </summary>
+    public static JsonSerializerOptions Create() => new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
