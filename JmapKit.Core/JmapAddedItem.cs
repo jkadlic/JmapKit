@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace JmapKit;
 
 /// <summary>
@@ -10,10 +12,12 @@ public sealed record JmapAddedItem
 	/// <summary>
 	/// The id of the record added to the query's results.
 	/// </summary>
+	[JsonPropertyName("id")]
 	public required JmapId Id { get; init; }
 
 	/// <summary>
 	/// The zero-based index of <see cref="Id"/> within the full result set.
 	/// </summary>
+	[JsonPropertyName("index")]
 	public required long Index { get; init; }
 }

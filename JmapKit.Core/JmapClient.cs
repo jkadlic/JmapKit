@@ -40,7 +40,7 @@ public sealed class JmapClient : IJmapClient
         _http = http;
         _credential = credential;
         _options = options;
-        _jsonOptions = new JsonSerializerOptions();
+        _jsonOptions = JmapJson.Default;
     }
 
     private async Task ResolveEntrypointAsync(CancellationToken ct)

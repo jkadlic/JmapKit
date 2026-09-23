@@ -51,59 +51,86 @@ Everything else is 1.0.
 These are not gaps against optional parts of the spec. They mean the typed API cannot talk
 to a conformant JMAP server today.
 
-**Tracked as issues [#7](https://github.com/jkadlic/JmapKit/issues/7)–[#12](https://github.com/jkadlic/JmapKit/issues/12).** Those issues own status; this section
-owns the reasoning and the evidence. Items in A, F and H are not filed yet and keep their
-status field until they are.
+**Tracked as issues [#7](https://github.com/jkadlic/JmapKit/issues/7) and [#9](https://github.com/jkadlic/JmapKit/issues/9)–[#12](https://github.com/jkadlic/JmapKit/issues/12).** Those issues own status; this
+section owns the reasoning and the evidence. C-2 is resolved here rather than in an issue.
+Items in A, F and H are not filed yet and keep their status field until they are.
 
-### C-1 · No camelCase naming policy · [#7](https://github.com/jkadlic/JmapKit/issues/7)
+### C-1 · Wire property names are inferred, not declared · [#7](https://github.com/jkadlic/JmapKit/issues/7)
 
 **Where:** `JmapKit.Core/JmapClient.cs:43`, and every argument/response record.
 
-`new JsonSerializerOptions()` is created with no naming policy. `JmapSession`,
-`JmapRequest` and `JmapResponse` carry `[JsonPropertyName]` attributes; none of
-`JmapGetArguments`, `JmapSetArguments`, `JmapChangesArguments`, `JmapCopyArguments`,
-`JmapQueryArguments`, `JmapQueryChangesArguments`, `JmapComparator`, `JmapAddedItem`,
-`JmapMethodError` or `JmapSetError` do.
+RFC 8620 never mandates camelCase — the word does not appear in it. What
+[§1.1](https://www.rfc-editor.org/rfc/rfc8620#section-1.1) says is that *"all the property
+names and values are case sensitive."* Wire names are fixed literals that happen to be
+camelCase throughout the spec, so `AccountId` is not a miscased `accountId`; it is an
+unrecognised argument alongside a missing required one, which §3.6.1 makes an
+`invalidArguments` error (MUST-level for `/get`, §5.1).
 
-Verified by compiling against the library:
-
-```
-GET ARGS:   {"AccountId":"u1","Ids":["a1"],"Properties":null}
-QUERY ARGS: {"AccountId":"u1","Filter":null,"Sort":[{"Property":"receivedAt",...
-```
-
-And in reverse, feeding a spec-correct response into the response record:
+`new JsonSerializerOptions()` was created with no naming policy, and only `JmapSession`,
+`JmapRequest` and `JmapResponse` declared their names. Everything else inferred them from
+the C# identifier — which produced PascalCase, so nothing round-tripped:
 
 ```
-{"accountId":"u1","state":"s1","list":[],"notFound":[]}
-→ JsonException: missing required properties including: 'AccountId', 'State', 'List', 'NotFound'
+outbound: {"AccountId":"u1","Ids":["a1"],"Properties":null}
+          → rejected by any conformant server
+
+inbound:  {"accountId":"u1","state":"s1","list":[],"notFound":[]}
+          → JsonException: missing required properties including:
+            'AccountId', 'State', 'List', 'NotFound'
 ```
 
-Outbound arguments are rejected by any server; inbound responses cannot be read.
+Two mechanisms are needed because they cover different types. `[JsonPropertyName]` pins the
+names this library owns and takes precedence over any policy, so those types stay correct
+even under options the library did not supply. A camelCase policy covers consumer-defined
+`T`, which the library can never annotate. Attributes are the primary mechanism; the policy
+is the fallback.
 
-This is currently masked by the test suite: `JmapKit.Core.Tests/TestJmapClient.cs:341` and
-the sibling verb tests use PascalCase fixtures (`{"AccountId":"acc1","State":"s1",...}`),
-so the bug is asserted as correct behaviour.
+**The failure that mattered most was silent.** `JmapPartial<T>.MergeOnto` overlays the
+server's keys onto a serialized `T` by name. Mismatched casing put the server's values
+*beside* the originals instead of overwriting them, and they were dropped on the way back —
+a `/set` response quietly discarding everything the server changed, with no exception:
 
-**Done when:** the client's `JsonSerializerOptions` sets
-`PropertyNamingPolicy = JsonNamingPolicy.CamelCase`, every fixture in
-`TestJmapClient.cs` is camelCase, and a round-trip test asserts the exact request body
-bytes for at least one verb.
+```
+server sent subject = 'server rewrote this', keywords = [$seen]
+merged.Subject      = 'hi'      (expected 'server rewrote this')
+merged.Keywords     = null      (expected [$seen])
+```
 
-### C-2 · `TryDeserialize` cannot reach the client's serializer options · [#8](https://github.com/jkadlic/JmapKit/issues/8)
+This was masked by the test suite, whose fixtures encoded the same assumption as the code,
+and no test asserted the property names the client emitted.
+
+**Any test covering this must avoid `Core/echo`.**
+[§4](https://www.rfc-editor.org/rfc/rfc8620#section-4) has the server return echo's arguments
+exactly as given, and they are opaque, so PascalCase round-trips through echo perfectly and
+cannot detect this class of bug.
+
+**Done when:** every wire type declares its property names, the client's options carry a
+camelCase fallback, `IJmapObject` documents the contract, a reflection test fails the build
+if a wire property is left unannotated, every fixture is camelCase, and a round-trip test
+asserts the exact emitted arguments for a non-echo verb.
+
+### C-2 · `TryDeserialize` cannot reach the client's serializer options · `WONTFIX`
 
 **Where:** `JmapKit.Core/JmapMethodResponse.cs`, and the README usage examples.
 
 `TryDeserialize<T>` requires the caller to supply `JsonSerializerOptions`, and the client's
-configured instance is private. The README shows `TryDeserialize<...>(new(), ...)` — default
-options, which will never match the wire format even after C-1.
+configured instance is private, so every call site in the repo passed a throwaway `new()`.
+This was filed as issue #8 on the assumption that the options had to become reachable.
 
-Depends on C-1 (the two are one fix in practice: there has to be one shared options
-instance, and it has to be reachable).
+Superseded by C-1. Once every type in the graph declares its own property names, attributes
+take precedence over whatever options are passed, so the argument no longer determines
+whether the response parses. The reachability problem dissolves rather than being solved.
+The options parameter keeps a narrower job — supplying converters for the caller's own
+types — and the README now shows a reused instance rather than a per-call `new()`, since
+`JsonSerializerOptions` caches type metadata per instance.
 
-**Done when:** callers cannot accidentally deserialize with mismatched options — either the
-parameter defaults to the client's instance, or the options are exposed on `IJmapClient`
-and the README is updated.
+This holds only as long as the types involved are annotated, which is why C-1 also added the
+reflection test and the documented `IJmapObject` contract. A hand-rolled `IJmapObject` that
+skips the attributes still depends on the caller's options carrying the camelCase policy;
+the analyzer tracked in [#14](https://github.com/jkadlic/JmapKit/issues/14) is what would close that
+gap.
+
+Issue #8 was deleted, not closed — this section is where its reasoning lives.
 
 ### C-3 · DI guards are dead; explicit configuration throws · [#9](https://github.com/jkadlic/JmapKit/issues/9)
 

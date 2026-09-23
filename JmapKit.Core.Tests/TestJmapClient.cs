@@ -338,7 +338,7 @@ public class TestJmapClient
     [TestMethod]
     public async Task GetAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
-        var handler = CreateVerbHandler("""{"AccountId":"acc1","State":"s1","List":[],"NotFound":[]}""");
+        var handler = CreateVerbHandler("""{"accountId":"acc1","state":"s1","list":[],"notFound":[]}""");
         var client = CreateClient(handler);
 
         var response = await client.GetAsync(new JmapGetArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
@@ -354,7 +354,7 @@ public class TestJmapClient
     [TestMethod]
     public async Task GetAsync_RequestShape_IncludesCoreAndTypeCapabilities()
     {
-        var handler = CreateVerbHandler("""{"AccountId":"acc1","State":"s1","List":[],"NotFound":[]}""");
+        var handler = CreateVerbHandler("""{"accountId":"acc1","state":"s1","list":[],"notFound":[]}""");
         var client = CreateClient(handler);
 
         await client.GetAsync(new JmapGetArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
@@ -368,11 +368,64 @@ public class TestJmapClient
         call[2].GetString().Should().Be("c0");
     }
 
+    /// <summary>
+    /// Asserts the exact argument names the client puts on the wire. RFC 8620 §1.1 makes property names case
+    /// sensitive, so a mis-cased name is an unrecognised argument rather than a variant spelling.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not written against "Core/echo": RFC 8620 §4 has the server return echo's arguments
+    /// exactly as given, and those arguments are opaque, so PascalCase round-trips through echo perfectly and
+    /// would not detect this at all.
+    /// </remarks>
+    [TestMethod]
+    public async Task GetAsync_RequestShape_SerializesArgumentsWithSpecPropertyNames()
+    {
+        var handler = CreateVerbHandler("""{"accountId":"acc1","state":"s1","list":[],"notFound":[]}""");
+        var client = CreateClient(handler);
+
+        await client.GetAsync(
+            new JmapGetArguments<TestObject>
+            {
+                AccountId = JmapId.Parse("acc1"),
+                Ids = [JmapId.Parse("id1")],
+                Properties = ["name"]
+            },
+            CancellationToken.None);
+
+        var body = await handler.Requests[2].Content!.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        var arguments = doc.RootElement.GetProperty("methodCalls")[0][1];
+
+        arguments.GetRawText().Should().Be("""{"accountId":"acc1","ids":["id1"],"properties":["name"]}""");
+    }
+
+    [TestMethod]
+    public async Task QueryAsync_RequestShape_SerializesNestedComparatorWithSpecPropertyNames()
+    {
+        var handler = CreateVerbHandler(
+            """{"accountId":"acc1","queryState":"qs1","canCalculateChanges":false,"position":0,"ids":[]}""");
+        var client = CreateClient(handler);
+
+        await client.QueryAsync(
+            new JmapQueryArguments<TestObject>
+            {
+                AccountId = JmapId.Parse("acc1"),
+                Sort = [new JmapComparator { Property = "name", IsAscending = false }]
+            },
+            CancellationToken.None);
+
+        var body = await handler.Requests[2].Content!.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        var sort = doc.RootElement.GetProperty("methodCalls")[0][1].GetProperty("sort")[0];
+
+        sort.GetRawText().Should().Be("""{"property":"name","isAscending":false,"collation":null}""");
+    }
+
     [TestMethod]
     public async Task GetAsync_ServerReturnsMethodError_ReturnsMethodResponseWithoutThrowing()
     {
         var handler = CreateApiHandler(_ =>
-            JsonResponse(HttpStatusCode.OK, BuildResponseJson("error", """{"Type":"accountNotFound"}""", "c0")));
+            JsonResponse(HttpStatusCode.OK, BuildResponseJson("error", """{"type":"accountNotFound"}""", "c0")));
         var client = CreateClient(handler);
 
         var response = await client.GetAsync(new JmapGetArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
@@ -413,7 +466,7 @@ public class TestJmapClient
     [TestMethod]
     public async Task SetAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
-        var handler = CreateVerbHandler("""{"AccountId":"acc1","OldState":null,"NewState":"s2"}""");
+        var handler = CreateVerbHandler("""{"accountId":"acc1","oldState":null,"newState":"s2"}""");
         var client = CreateClient(handler);
 
         var response = await client.SetAsync(new JmapSetArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
@@ -428,7 +481,7 @@ public class TestJmapClient
     public async Task ChangesAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
         var handler = CreateVerbHandler(
-            """{"AccountId":"acc1","OldState":"s1","NewState":"s2","HasMoreChanges":false,"Created":[],"Updated":[],"Destroyed":[]}""");
+            """{"accountId":"acc1","oldState":"s1","newState":"s2","hasMoreChanges":false,"created":[],"updated":[],"destroyed":[]}""");
         var client = CreateClient(handler);
 
         var response = await client.ChangesAsync(
@@ -444,7 +497,7 @@ public class TestJmapClient
     [TestMethod]
     public async Task CopyAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
-        var handler = CreateVerbHandler("""{"FromAccountId":"acc1","AccountId":"acc2","OldState":null,"NewState":"s2"}""");
+        var handler = CreateVerbHandler("""{"fromAccountId":"acc1","accountId":"acc2","oldState":null,"newState":"s2"}""");
         var client = CreateClient(handler);
 
         var response = await client.CopyAsync(
@@ -466,7 +519,7 @@ public class TestJmapClient
     public async Task QueryAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
         var handler = CreateVerbHandler(
-            """{"AccountId":"acc1","QueryState":"qs1","CanCalculateChanges":false,"Position":0,"Ids":[]}""");
+            """{"accountId":"acc1","queryState":"qs1","canCalculateChanges":false,"position":0,"ids":[]}""");
         var client = CreateClient(handler);
 
         var response = await client.QueryAsync(new JmapQueryArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
@@ -481,7 +534,7 @@ public class TestJmapClient
     public async Task QueryChangesAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
         var handler = CreateVerbHandler(
-            """{"AccountId":"acc1","OldQueryState":"qs1","NewQueryState":"qs2","Removed":[],"Added":[]}""");
+            """{"accountId":"acc1","oldQueryState":"qs1","newQueryState":"qs2","removed":[],"added":[]}""");
         var client = CreateClient(handler);
 
         var response = await client.QueryChangesAsync(

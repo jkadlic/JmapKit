@@ -19,7 +19,7 @@ public sealed class TestJmapComparator
     [TestMethod]
     public void Deserialize_MissingIsAscending_DefaultsToTrue()
     {
-        var json = """{"Property":"name"}""";
+        var json = """{"property":"name"}""";
 
         var comparator = JsonSerializer.Deserialize<JmapComparator>(json, Options);
 

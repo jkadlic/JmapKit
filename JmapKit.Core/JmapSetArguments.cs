@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace JmapKit;
 
@@ -12,6 +13,7 @@ public sealed record JmapSetArguments<T>
 	/// <summary>
 	/// The id of the account to use.
 	/// </summary>
+	[JsonPropertyName("accountId")]
 	public required JmapId AccountId { get; init; }
 
 	/// <summary>
@@ -19,21 +21,25 @@ public sealed record JmapSetArguments<T>
 	/// current state on the server for the request to be processed; otherwise the whole method call is
 	/// rejected with a "stateMismatch" error.
 	/// </summary>
+	[JsonPropertyName("ifInState")]
 	public string? IfInState { get; init; }
 
 	/// <summary>
 	/// A map of a creation id to <typeparamref name="T"/> objects, or null if no objects are to be created.
 	/// </summary>
+	[JsonPropertyName("create")]
 	public Dictionary<JmapId, T>? Create { get; init; }
 
 	/// <summary>
 	/// A map of the id of an existing <typeparamref name="T"/> object to a Patch object describing the changes to apply.
 	/// </summary>
+	[JsonPropertyName("update")]
 	public Dictionary<JmapId, JsonElement>? Update { get; init; }
 
 	/// <summary>
 	/// A list of ids for <typeparamref name="T"/> objects to permanently delete.
 	/// </summary>
+	[JsonPropertyName("destroy")]
 	public List<JmapId>? Destroy { get; init; }
 }
 
@@ -47,16 +53,19 @@ public sealed record JmapSetResponse<T>
 	/// <summary>
 	/// The id of the account used for the call.
 	/// </summary>
+	[JsonPropertyName("accountId")]
 	public required JmapId AccountId { get; init; }
 
 	/// <summary>
 	/// The state string that would have been returned by "<typeparamref name="T"/>/get" before making the requested changes.
 	/// </summary>
+	[JsonPropertyName("oldState")]
 	public required string? OldState { get; init; }
 	
 	/// <summary>
 	/// The state string that will now be returned by "<typeparamref name="T"/>/get".
 	/// </summary>
+	[JsonPropertyName("newState")]
 	public required string NewState { get; init; }
 	
 	/// <summary>
@@ -65,6 +74,7 @@ public sealed record JmapSetResponse<T>
 	///
 	/// Null if no <typeparamref name="T"/> objects were successfully created.
 	/// </summary>
+	[JsonPropertyName("created")]
 	public Dictionary<JmapId, JmapPartial<T>>? Created { get; init; }
 
 	/// <summary>
@@ -75,28 +85,33 @@ public sealed record JmapSetResponse<T>
 	///
 	/// Null if no <typeparamref name="T"/> objects were successfully updated.
 	/// </summary>
+	[JsonPropertyName("updated")]
 	public Dictionary<JmapId, JmapPartial<T>?>? Updated { get; init; }
 
 	/// <summary>
 	/// The ids of <typeparamref name="T"/> objects that were successfully destroyed, or null if none.
 	/// </summary>
+	[JsonPropertyName("destroyed")]
 	public JmapId[]? Destroyed { get; init; }
 
 	/// <summary>
 	/// A map of the creation id to a <see cref="JmapSetError"/> object for each <typeparamref name="T"/> that
 	/// failed to be created.
 	/// </summary>
+	[JsonPropertyName("notCreated")]
 	public Dictionary<JmapId, JmapSetError>? NotCreated { get; init; }
 
 	/// <summary>
 	/// A map of the <typeparamref name="T"/> id to a <see cref="JmapSetError"/> object for each record that
 	/// failed to be updated.
 	/// </summary>
+	[JsonPropertyName("notUpdated")]
 	public Dictionary<JmapId, JmapSetError>? NotUpdated { get; init; }
 
 	/// <summary>
 	/// A map of the <typeparamref name="T"/> id to a <see cref="JmapSetError"/> object for each record that
 	/// failed to be destroyed.
 	/// </summary>
+	[JsonPropertyName("notDestroyed")]
 	public Dictionary<JmapId, JmapSetError>? NotDestroyed { get; init; }
 }

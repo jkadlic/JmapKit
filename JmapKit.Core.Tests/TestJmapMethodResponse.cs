@@ -23,7 +23,7 @@ public sealed class TestJmapMethodResponse
     [TestMethod]
     public void IsError_NameIsError_ReturnsTrue()
     {
-        var response = Response("error", """{"Type":"unknownMethod"}""");
+        var response = Response("error", """{"type":"unknownMethod"}""");
 
         response.IsError.Should().BeTrue();
     }
@@ -52,7 +52,7 @@ public sealed class TestJmapMethodResponse
     [TestMethod]
     public void TryDeserialize_ErrorResponse_ReturnsFalseAndPopulatesError()
     {
-        var response = Response("error", """{"Type":"invalidArguments","Description":"bad stuff"}""");
+        var response = Response("error", """{"type":"invalidArguments","description":"bad stuff"}""");
 
         var success = response.TryDeserialize<TestResult>(Options, out var value, out var error);
 
@@ -66,7 +66,7 @@ public sealed class TestJmapMethodResponse
     [TestMethod]
     public void TryDeserialize_ErrorResponseWithoutDescription_DescriptionIsNull()
     {
-        var response = Response("error", """{"Type":"unknownMethod"}""");
+        var response = Response("error", """{"type":"unknownMethod"}""");
 
         response.TryDeserialize<TestResult>(Options, out _, out var error);
 
