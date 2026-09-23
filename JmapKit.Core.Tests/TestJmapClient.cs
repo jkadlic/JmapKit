@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 
 namespace JmapKit.Tests;
@@ -49,8 +50,11 @@ public class TestJmapClient
         }
         """;
 
-    private static JmapClient CreateClient(FakeHttpMessageHandler handler) =>
-        new(new HttpClient(handler), new JmapTokenCredential("test-token"), new JmapClientOptions(Host));
+    private static JmapClient CreateClient(FakeHttpMessageHandler handler, Action<JsonSerializerOptions>? configureJson = null) =>
+        new(new HttpClient(handler),
+            new JmapTokenCredential("test-token"),
+            new JmapClientOptions(Host),
+            new JmapSerializerOptions(configureJson));
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode status, string body) => new(status)
     {
@@ -310,7 +314,7 @@ public class TestJmapClient
 
         response.Name.Should().Be("Core/echo");
         response.IsError.Should().BeFalse();
-        response.TryDeserialize<Dictionary<string, string>>(new JsonSerializerOptions(), out var value, out var error)
+        response.TryDeserialize<Dictionary<string, string>>(out var value, out var error)
             .Should().BeTrue();
         value.Should().ContainKey("hello").WhoseValue.Should().Be("world");
         error.Should().BeNull();
@@ -333,19 +337,88 @@ public class TestJmapClient
         call[2].GetString().Should().Be("c0");
     }
 
+    // ----- Serializer configuration -----
+
+    /// <summary>
+    /// A value object with no built-in JSON representation, standing in for the realistic reason to
+    /// configure the serializer: the caller's own type needs a converter.
+    /// </summary>
+    private readonly record struct Tag(string Value);
+
+    private sealed class TagConverter : JsonConverter<Tag>
+    {
+        public override Tag Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            new(reader.GetString()!.ToUpperInvariant());
+
+        public override void Write(Utf8JsonWriter writer, Tag value, JsonSerializerOptions options) =>
+            writer.WriteStringValue(value.Value.ToLowerInvariant());
+    }
+
+    private sealed record TaggedObject : IJmapObject
+    {
+        public static string JmapName => "TaggedObject";
+        public static JmapCapability[] JmapCapabilities => [new("urn:ietf:params:jmap:core")];
+        public static JmapMethod[] SupportedMethods => [JmapMethod.Get, JmapMethod.Set];
+
+        [JsonPropertyName("tag")] public Tag Tag { get; init; }
+    }
+
+    /// <summary>
+    /// The converter registered through <c>configureJson</c> has to reach the response payload, not just the
+    /// envelope — the payload is deserialized by <see cref="JmapMethodResponse.TryDeserialize{T}"/>, which
+    /// used to take its options from the caller rather than from the client.
+    /// </summary>
+    [TestMethod]
+    public async Task TryDeserialize_ConfiguredConverter_IsAppliedToTheResponsePayload()
+    {
+        var handler = CreateVerbHandler(
+            """{"accountId":"acc1","state":"s1","list":[{"tag":"inbox"}],"notFound":[]}""");
+        var client = CreateClient(handler, json => json.Converters.Add(new TagConverter()));
+
+        var response = await client.GetAsync(
+            new JmapGetArguments<TaggedObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
+
+        response.TryDeserialize<JmapGetResponse<TaggedObject>>(out var value, out var error)
+            .Should().BeTrue();
+        error.Should().BeNull();
+        value!.List.Should().ContainSingle()
+            .Which.Tag.Value.Should().Be("INBOX", "the caller's converter should have read the payload");
+    }
+
+    [TestMethod]
+    public async Task InvokeAsync_ConfiguredConverter_IsAppliedToOutgoingArguments()
+    {
+        var handler = CreateVerbHandler("""{"accountId":"acc1","state":"s1","list":[],"notFound":[]}""");
+        var client = CreateClient(handler, json => json.Converters.Add(new TagConverter()));
+
+        await client.SetAsync(
+            new JmapSetArguments<TaggedObject>
+            {
+                AccountId = JmapId.Parse("acc1"),
+                Create = new() { [JmapId.Parse("k1")] = new TaggedObject { Tag = new Tag("INBOX") } },
+            },
+            CancellationToken.None);
+
+        var body = await handler.Requests[2].Content!.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        doc.RootElement.GetProperty("methodCalls")[0][1]
+            .GetProperty("create").GetProperty("k1").GetProperty("tag").GetString()
+            .Should().Be("inbox");
+    }
+
     // ----- Typed verb methods -----
 
     [TestMethod]
     public async Task GetAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
-        var handler = CreateVerbHandler("""{"AccountId":"acc1","State":"s1","List":[],"NotFound":[]}""");
+        var handler = CreateVerbHandler("""{"accountId":"acc1","state":"s1","list":[],"notFound":[]}""");
         var client = CreateClient(handler);
 
         var response = await client.GetAsync(new JmapGetArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
 
         response.Name.Should().Be("TestObject/get");
         response.IsError.Should().BeFalse();
-        response.TryDeserialize<JmapGetResponse<TestObject>>(new JsonSerializerOptions(), out var value, out var error)
+        response.TryDeserialize<JmapGetResponse<TestObject>>(out var value, out var error)
             .Should().BeTrue();
         value!.AccountId.Should().Be(JmapId.Parse("acc1"));
         error.Should().BeNull();
@@ -354,7 +427,7 @@ public class TestJmapClient
     [TestMethod]
     public async Task GetAsync_RequestShape_IncludesCoreAndTypeCapabilities()
     {
-        var handler = CreateVerbHandler("""{"AccountId":"acc1","State":"s1","List":[],"NotFound":[]}""");
+        var handler = CreateVerbHandler("""{"accountId":"acc1","state":"s1","list":[],"notFound":[]}""");
         var client = CreateClient(handler);
 
         await client.GetAsync(new JmapGetArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
@@ -368,17 +441,72 @@ public class TestJmapClient
         call[2].GetString().Should().Be("c0");
     }
 
+    /// <summary>
+    /// Asserts the exact argument names the client puts on the wire. RFC 8620 §1.1 makes property names case
+    /// sensitive, so a mis-cased name is an unrecognised argument rather than a variant spelling.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not written against "Core/echo": RFC 8620 §4 has the server return echo's arguments
+    /// exactly as given, and those arguments are opaque, so PascalCase round-trips through echo perfectly and
+    /// would not detect this at all.
+    /// </remarks>
+    [TestMethod]
+    public async Task GetAsync_RequestShape_SerializesArgumentsWithSpecPropertyNames()
+    {
+        var handler = CreateVerbHandler("""{"accountId":"acc1","state":"s1","list":[],"notFound":[]}""");
+        var client = CreateClient(handler);
+
+        await client.GetAsync(
+            new JmapGetArguments<TestObject>
+            {
+                AccountId = JmapId.Parse("acc1"),
+                Ids = [JmapId.Parse("id1")],
+                Properties = ["name"]
+            },
+            CancellationToken.None);
+
+        var body = await handler.Requests[2].Content!.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        var arguments = doc.RootElement.GetProperty("methodCalls")[0][1];
+
+        arguments.GetRawText().Should().Be("""{"accountId":"acc1","ids":["id1"],"properties":["name"]}""");
+    }
+
+    [TestMethod]
+    public async Task QueryAsync_RequestShape_SerializesNestedComparatorWithSpecPropertyNames()
+    {
+        var handler = CreateVerbHandler(
+            """{"accountId":"acc1","queryState":"qs1","canCalculateChanges":false,"position":0,"ids":[]}""");
+        var client = CreateClient(handler);
+
+        await client.QueryAsync(
+            new JmapQueryArguments<TestObject>
+            {
+                AccountId = JmapId.Parse("acc1"),
+                Sort = [new JmapComparator { Property = "name", IsAscending = false }]
+            },
+            CancellationToken.None);
+
+        var body = await handler.Requests[2].Content!.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        var sort = doc.RootElement.GetProperty("methodCalls")[0][1].GetProperty("sort")[0];
+
+        // No "collation": it is typed "String" with a server-dependent default rather than "String|null"
+        // (RFC 8620 §5.5), so an unset collation is omitted rather than sent as null.
+        sort.GetRawText().Should().Be("""{"property":"name","isAscending":false}""");
+    }
+
     [TestMethod]
     public async Task GetAsync_ServerReturnsMethodError_ReturnsMethodResponseWithoutThrowing()
     {
         var handler = CreateApiHandler(_ =>
-            JsonResponse(HttpStatusCode.OK, BuildResponseJson("error", """{"Type":"accountNotFound"}""", "c0")));
+            JsonResponse(HttpStatusCode.OK, BuildResponseJson("error", """{"type":"accountNotFound"}""", "c0")));
         var client = CreateClient(handler);
 
         var response = await client.GetAsync(new JmapGetArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
 
         response.IsError.Should().BeTrue();
-        response.TryDeserialize<JmapGetResponse<TestObject>>(new JsonSerializerOptions(), out var value, out var error)
+        response.TryDeserialize<JmapGetResponse<TestObject>>(out var value, out var error)
             .Should().BeFalse();
         value.Should().BeNull();
         error!.Type.Should().Be("accountNotFound");
@@ -413,13 +541,13 @@ public class TestJmapClient
     [TestMethod]
     public async Task SetAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
-        var handler = CreateVerbHandler("""{"AccountId":"acc1","OldState":null,"NewState":"s2"}""");
+        var handler = CreateVerbHandler("""{"accountId":"acc1","oldState":null,"newState":"s2"}""");
         var client = CreateClient(handler);
 
         var response = await client.SetAsync(new JmapSetArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
 
         response.Name.Should().Be("TestObject/set");
-        response.TryDeserialize<JmapSetResponse<TestObject>>(new JsonSerializerOptions(), out var value, out _)
+        response.TryDeserialize<JmapSetResponse<TestObject>>(out var value, out _)
             .Should().BeTrue();
         value!.NewState.Should().Be("s2");
     }
@@ -428,7 +556,7 @@ public class TestJmapClient
     public async Task ChangesAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
         var handler = CreateVerbHandler(
-            """{"AccountId":"acc1","OldState":"s1","NewState":"s2","HasMoreChanges":false,"Created":[],"Updated":[],"Destroyed":[]}""");
+            """{"accountId":"acc1","oldState":"s1","newState":"s2","hasMoreChanges":false,"created":[],"updated":[],"destroyed":[]}""");
         var client = CreateClient(handler);
 
         var response = await client.ChangesAsync(
@@ -436,7 +564,7 @@ public class TestJmapClient
             CancellationToken.None);
 
         response.Name.Should().Be("TestObject/changes");
-        response.TryDeserialize<JmapChangesResponse<TestObject>>(new JsonSerializerOptions(), out var value, out _)
+        response.TryDeserialize<JmapChangesResponse<TestObject>>(out var value, out _)
             .Should().BeTrue();
         value!.HasMoreChanges.Should().BeFalse();
     }
@@ -444,7 +572,7 @@ public class TestJmapClient
     [TestMethod]
     public async Task CopyAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
-        var handler = CreateVerbHandler("""{"FromAccountId":"acc1","AccountId":"acc2","OldState":null,"NewState":"s2"}""");
+        var handler = CreateVerbHandler("""{"fromAccountId":"acc1","accountId":"acc2","oldState":null,"newState":"s2"}""");
         var client = CreateClient(handler);
 
         var response = await client.CopyAsync(
@@ -457,7 +585,7 @@ public class TestJmapClient
             CancellationToken.None);
 
         response.Name.Should().Be("TestObject/copy");
-        response.TryDeserialize<JmapCopyResponse<TestObject>>(new JsonSerializerOptions(), out var value, out _)
+        response.TryDeserialize<JmapCopyResponse<TestObject>>(out var value, out _)
             .Should().BeTrue();
         value!.NewState.Should().Be("s2");
     }
@@ -466,13 +594,13 @@ public class TestJmapClient
     public async Task QueryAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
         var handler = CreateVerbHandler(
-            """{"AccountId":"acc1","QueryState":"qs1","CanCalculateChanges":false,"Position":0,"Ids":[]}""");
+            """{"accountId":"acc1","queryState":"qs1","canCalculateChanges":false,"position":0,"ids":[]}""");
         var client = CreateClient(handler);
 
         var response = await client.QueryAsync(new JmapQueryArguments<TestObject> { AccountId = JmapId.Parse("acc1") }, CancellationToken.None);
 
         response.Name.Should().Be("TestObject/query");
-        response.TryDeserialize<JmapQueryResponse<TestObject>>(new JsonSerializerOptions(), out var value, out _)
+        response.TryDeserialize<JmapQueryResponse<TestObject>>(out var value, out _)
             .Should().BeTrue();
         value!.QueryState.Should().Be("qs1");
     }
@@ -481,7 +609,7 @@ public class TestJmapClient
     public async Task QueryChangesAsync_ValidResponse_ReturnsDeserializableMethodResponse()
     {
         var handler = CreateVerbHandler(
-            """{"AccountId":"acc1","OldQueryState":"qs1","NewQueryState":"qs2","Removed":[],"Added":[]}""");
+            """{"accountId":"acc1","oldQueryState":"qs1","newQueryState":"qs2","removed":[],"added":[]}""");
         var client = CreateClient(handler);
 
         var response = await client.QueryChangesAsync(
@@ -489,7 +617,7 @@ public class TestJmapClient
             CancellationToken.None);
 
         response.Name.Should().Be("TestObject/queryChanges");
-        response.TryDeserialize<JmapQueryChangesResponse<TestObject>>(new JsonSerializerOptions(), out var value, out _)
+        response.TryDeserialize<JmapQueryChangesResponse<TestObject>>(out var value, out _)
             .Should().BeTrue();
         value!.NewQueryState.Should().Be("qs2");
     }

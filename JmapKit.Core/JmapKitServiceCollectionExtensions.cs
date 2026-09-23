@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace JmapKit;
@@ -17,17 +18,25 @@ public static class JmapKitServiceCollectionExtensions
     /// 
     /// </summary>
     /// <param name="services">Service collection</param>
+    /// <param name="configureJson">
+    /// Optionally adjusts the JSON configuration used by the JmapClient.
+    /// </param>
     /// <returns>Service collection</returns>
-    public static IServiceCollection AddJmapClient(this IServiceCollection services)
+    public static IServiceCollection AddJmapClient(
+        this IServiceCollection services,
+        Action<JsonSerializerOptions>? configureJson = null)
     {
         // Register a default if one was not registered by user.
         if (!services.Contains(ServiceDescriptor.Singleton(typeof(JmapTokenCredential))))
             services.AddSingleton<JmapTokenCredential>();
-        
+
         // Register a default options object if one was not registered by user.
         if (!services.Contains(ServiceDescriptor.Singleton(typeof(JmapClientOptions))))
             services.AddSingleton<JmapClientOptions>();
-        
+
+        // Built once and shared: JsonSerializerOptions caches type metadata per instance.
+        services.AddSingleton(new JmapSerializerOptions(configureJson));
+
         services.AddHttpClient<IJmapClient, JmapClient>()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {

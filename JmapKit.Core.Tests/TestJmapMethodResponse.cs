@@ -6,8 +6,6 @@ namespace JmapKit.Tests;
 [TestClass]
 public sealed class TestJmapMethodResponse
 {
-    private static JsonSerializerOptions Options { get; } = new();
-
     private sealed record TestResult
     {
         public required string Value { get; init; }
@@ -23,7 +21,7 @@ public sealed class TestJmapMethodResponse
     [TestMethod]
     public void IsError_NameIsError_ReturnsTrue()
     {
-        var response = Response("error", """{"Type":"unknownMethod"}""");
+        var response = Response("error", """{"type":"unknownMethod"}""");
 
         response.IsError.Should().BeTrue();
     }
@@ -39,9 +37,11 @@ public sealed class TestJmapMethodResponse
     [TestMethod]
     public void TryDeserialize_SuccessResponse_ReturnsTrueAndPopulatesValue()
     {
-        var response = Response("Foo/get", """{"Value":"hello"}""");
+        // A response built directly rather than read by the converter falls back to the library defaults,
+        // so the camelCase policy applies here too.
+        var response = Response("Foo/get", """{"value":"hello"}""");
 
-        var success = response.TryDeserialize<TestResult>(Options, out var value, out var error);
+        var success = response.TryDeserialize<TestResult>(out var value, out var error);
 
         success.Should().BeTrue();
         value.Should().NotBeNull();
@@ -52,9 +52,9 @@ public sealed class TestJmapMethodResponse
     [TestMethod]
     public void TryDeserialize_ErrorResponse_ReturnsFalseAndPopulatesError()
     {
-        var response = Response("error", """{"Type":"invalidArguments","Description":"bad stuff"}""");
+        var response = Response("error", """{"type":"invalidArguments","description":"bad stuff"}""");
 
-        var success = response.TryDeserialize<TestResult>(Options, out var value, out var error);
+        var success = response.TryDeserialize<TestResult>(out var value, out var error);
 
         success.Should().BeFalse();
         value.Should().BeNull();
@@ -66,9 +66,9 @@ public sealed class TestJmapMethodResponse
     [TestMethod]
     public void TryDeserialize_ErrorResponseWithoutDescription_DescriptionIsNull()
     {
-        var response = Response("error", """{"Type":"unknownMethod"}""");
+        var response = Response("error", """{"type":"unknownMethod"}""");
 
-        response.TryDeserialize<TestResult>(Options, out _, out var error);
+        response.TryDeserialize<TestResult>(out _, out var error);
 
         error!.Description.Should().BeNull();
     }

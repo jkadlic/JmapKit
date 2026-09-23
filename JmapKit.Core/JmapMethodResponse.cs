@@ -32,15 +32,27 @@ public class JmapMethodResponse
     public bool IsError => Name == "error";
 
     /// <summary>
+    /// The options this response was read with, captured by <see cref="JmapMethodResponseConverter"/> so
+    /// that deserializing the payload uses the same configuration as the envelope.
+    /// </summary>
+    internal JsonSerializerOptions? SerializerOptions { get; init; }
+
+    /// <summary>
     /// Deserializes <see cref="Arguments"/> into <typeparamref name="T"/> if this call succeeded, or into a
     /// <see cref="JmapMethodError"/> if the server returned an error in its place.
     /// </summary>
+    /// <remarks>
+    /// Uses the client's configured <see cref="JsonSerializerOptions"/>, so the payload is read exactly as
+    /// the envelope was. Configure them through <c>AddJmapClient</c>, or give a data type its own
+    /// <see cref="JsonConverterAttribute"/>.
+    /// </remarks>
     /// <returns>True if deserialized into <paramref name="value"/>; false if deserialized into <paramref name="error"/>.</returns>
     public bool TryDeserialize<T>(
-        JsonSerializerOptions options,
         [NotNullWhen(true)] out T? value,
         [NotNullWhen(false)] out JmapMethodError? error)
     {
+        var options = SerializerOptions ?? JmapJson.Default;
+
         if (IsError)
         {
             value = default;
@@ -87,7 +99,13 @@ public class JmapMethodResponseConverter : JsonConverter<JmapMethodResponse>
         if (reader.TokenType != JsonTokenType.EndArray)
             throw new JsonException("Expected end of array for method response tuple.");
 
-        return new JmapMethodResponse { Name = name, Arguments = arguments, CallId = callId };
+        return new JmapMethodResponse
+        {
+            Name = name,
+            Arguments = arguments,
+            CallId = callId,
+            SerializerOptions = options,
+        };
     }
 
     /// <inheritdoc />

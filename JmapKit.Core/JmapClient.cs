@@ -35,12 +35,17 @@ public sealed class JmapClient : IJmapClient
     /// <param name="http">The <see cref="HttpClient"/> used to reach the JMAP server.</param>
     /// <param name="credential">The bearer token credential to authenticate with.</param>
     /// <param name="options">Client configuration, including the JMAP host.</param>
-    public JmapClient(HttpClient http, JmapTokenCredential credential, JmapClientOptions options)
+    /// <param name="serializerOptions">The JSON configuration used for all JMAP traffic.</param>
+    public JmapClient(
+        HttpClient http,
+        JmapTokenCredential credential,
+        JmapClientOptions options,
+        JmapSerializerOptions serializerOptions)
     {
         _http = http;
         _credential = credential;
         _options = options;
-        _jsonOptions = new JsonSerializerOptions();
+        _jsonOptions = serializerOptions.Options;
     }
 
     private async Task ResolveEntrypointAsync(CancellationToken ct)

@@ -83,11 +83,17 @@ public sealed record Mailbox : IJmapObject
     public static JmapCapability[] JmapCapabilities => [JmapCoreCapability.Core, new("urn:ietf:params:jmap:mail")];
     public static JmapMethod[] SupportedMethods => [JmapMethod.Get, JmapMethod.Set, JmapMethod.Changes];
 
-    public JmapId Id { get; init; }
-    public string? Name { get; init; }
-    public long TotalEmails { get; init; }
+    [JsonPropertyName("id")] public JmapId Id { get; init; }
+    [JsonPropertyName("name")] public string? Name { get; init; }
+    [JsonPropertyName("totalEmails")] public long TotalEmails { get; init; }
 }
 ```
+
+Name every serialized property with `[JsonPropertyName]`. JMAP property names are fixed literals defined by
+the relevant RFC rather than a transform of a C# identifier, and [RFC 8620
+§1.1](https://www.rfc-editor.org/rfc/rfc8620#section-1.1) matches them case sensitively — so a name that
+doesn't match exactly is an unrecognised property, not a differently cased one. See
+[JSON handling](docs/json-handling.md) for custom converters and serializer configuration.
 
 Calling a typed method not listed in `SupportedMethods` (e.g. `QueryAsync<Mailbox>` above) throws
 `JmapUnsupportedMethodException` before any request is sent.
@@ -98,7 +104,7 @@ Calling a typed method not listed in `SupportedMethods` (e.g. `QueryAsync<Mailbo
 
 ```csharp
 var echo = await jmap.EchoAsync(new Dictionary<string, string> { ["hello"] = "world" });
-echo.TryDeserialize<Dictionary<string, string>>(new(), out var echoResult, out _);
+echo.TryDeserialize<Dictionary<string, string>>(out var echoResult, out _);
 
 Console.WriteLine(echoResult!["hello"]); // "world"
 ```
@@ -110,7 +116,7 @@ Typed calls take a typed arguments record and return a `JmapMethodResponse`, des
 var args = new JmapGetArguments<Mailbox> { AccountId = JmapId.Parse("u1234567") };
 var response = await jmap.GetAsync(args);
 
-if (response.TryDeserialize<JmapGetResponse<Mailbox>>(new(), out var result, out var error))
+if (response.TryDeserialize<JmapGetResponse<Mailbox>>(out var result, out var error))
 {
     foreach (var mailbox in result.List)
         Console.WriteLine($"{mailbox.Name}: {mailbox.TotalEmails} emails");

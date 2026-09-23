@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace JmapKit;
 
 /// <summary>
@@ -11,6 +13,7 @@ public sealed record JmapCopyArguments<T>
 	/// <summary>
 	/// The id of the account to copy records from.
 	/// </summary>
+	[JsonPropertyName("fromAccountId")]
 	public required JmapId FromAccountId { get; init; }
 
 	/// <summary>
@@ -18,11 +21,13 @@ public sealed record JmapCopyArguments<T>
 	/// <see cref="FromAccountId"/>. If supplied, the string must match the current state of that account for
 	/// the request to be processed; otherwise the whole method call is rejected with a "stateMismatch" error.
 	/// </summary>
+	[JsonPropertyName("ifFromInState")]
 	public string? IfFromInState { get; init; }
 
 	/// <summary>
 	/// The id of the account to copy records into.
 	/// </summary>
+	[JsonPropertyName("accountId")]
 	public required JmapId AccountId { get; init; }
 
 	/// <summary>
@@ -30,6 +35,7 @@ public sealed record JmapCopyArguments<T>
 	/// If supplied, the string must match the current state of that account for the request to be processed;
 	/// otherwise the whole method call is rejected with a "stateMismatch" error.
 	/// </summary>
+	[JsonPropertyName("ifInState")]
 	public string? IfInState { get; init; }
 
 	/// <summary>
@@ -37,6 +43,7 @@ public sealed record JmapCopyArguments<T>
 	/// in the <see cref="FromAccountId"/> account to copy from, and may set other properties to override the
 	/// values of the copy.
 	/// </summary>
+	[JsonPropertyName("create")]
 	public required Dictionary<JmapId, T> Create { get; init; }
 
 	/// <summary>
@@ -44,6 +51,7 @@ public sealed record JmapCopyArguments<T>
 	/// the <see cref="FromAccountId"/> account once the copy completes, equivalent to a subsequent
 	/// "<typeparamref name="T"/>/set" call with those ids in its "destroy" argument. Defaults to false.
 	/// </summary>
+	[JsonPropertyName("onSuccessDestroyOriginal")]
 	public bool OnSuccessDestroyOriginal { get; init; }
 
 	/// <summary>
@@ -52,6 +60,7 @@ public sealed record JmapCopyArguments<T>
 	/// and it does not match the current state of that account, the whole method call is rejected with a
 	/// "stateMismatch" error before any copy is attempted.
 	/// </summary>
+	[JsonPropertyName("destroyFromIfInState")]
 	public string? DestroyFromIfInState { get; init; }
 }
 
@@ -65,22 +74,26 @@ public sealed record JmapCopyResponse<T>
 	/// <summary>
 	/// The id of the account records were copied from.
 	/// </summary>
+	[JsonPropertyName("fromAccountId")]
 	public required JmapId FromAccountId { get; init; }
 
 	/// <summary>
 	/// The id of the account records were copied into.
 	/// </summary>
+	[JsonPropertyName("accountId")]
 	public required JmapId AccountId { get; init; }
 
 	/// <summary>
 	/// The state string that would have been returned by "<typeparamref name="T"/>/get" on the destination account
 	/// before making the requested changes, or null if the server doesn't know what the previous state was.
 	/// </summary>
+	[JsonPropertyName("oldState")]
 	public required string? OldState { get; init; }
 
 	/// <summary>
 	/// The state string that will now be returned by "<typeparamref name="T"/>/get" on the destination account.
 	/// </summary>
+	[JsonPropertyName("newState")]
 	public required string NewState { get; init; }
 
 	/// <summary>
@@ -89,11 +102,13 @@ public sealed record JmapCopyResponse<T>
 	///
 	/// Null if no <typeparamref name="T"/> objects were successfully copied.
 	/// </summary>
+	[JsonPropertyName("created")]
 	public Dictionary<JmapId, JmapPartial<T>>? Created { get; init; }
 
 	/// <summary>
 	/// A map of the creation id to a <see cref="JmapSetError"/> object for each <typeparamref name="T"/> that
 	/// failed to be copied.
 	/// </summary>
+	[JsonPropertyName("notCreated")]
 	public Dictionary<JmapId, JmapSetError>? NotCreated { get; init; }
 }

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace JmapKit;
 
 /// <summary>
@@ -9,10 +11,12 @@ public sealed record JmapMethodError
     /// <summary>
     /// The error type, e.g. "unknownMethod" or "invalidArguments".
     /// </summary>
+    [JsonPropertyName("type")]
     public required string Type { get; init; }
 
     /// <summary>
     /// A human-readable description of the error, if the server provided one.
     /// </summary>
+    [JsonPropertyName("description")]
     public string? Description { get; init; }
 }
