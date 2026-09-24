@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace JmapKit;
 
@@ -15,27 +16,23 @@ public static class JmapKitServiceCollectionExtensions
     /// Registers a <see cref="JmapTokenCredential"/> by default if one is not yet registered.
     ///
     /// Registers a <see cref="JmapClientOptions"/> by default if one is not yet registered.
-    /// 
+    ///
+    /// Registers a <see cref="JmapSerializerOptions"/> by default if one is not yet registered.
+    ///
     /// </summary>
     /// <param name="services">Service collection</param>
     /// <param name="configureJson">
-    /// Optionally adjusts the JSON configuration used by the JmapClient.
+    /// Optionally adjusts the JSON configuration used by the JmapClient. Ignored if a
+    /// <see cref="JmapSerializerOptions"/> is already registered.
     /// </param>
     /// <returns>Service collection</returns>
     public static IServiceCollection AddJmapClient(
         this IServiceCollection services,
         Action<JsonSerializerOptions>? configureJson = null)
     {
-        // Register a default if one was not registered by user.
-        if (!services.Contains(ServiceDescriptor.Singleton(typeof(JmapTokenCredential))))
-            services.AddSingleton<JmapTokenCredential>();
-
-        // Register a default options object if one was not registered by user.
-        if (!services.Contains(ServiceDescriptor.Singleton(typeof(JmapClientOptions))))
-            services.AddSingleton<JmapClientOptions>();
-
-        // Built once and shared: JsonSerializerOptions caches type metadata per instance.
-        services.AddSingleton(new JmapSerializerOptions(configureJson));
+        services.TryAddSingleton<JmapTokenCredential>();
+        services.TryAddSingleton<JmapClientOptions>();
+        services.TryAddSingleton(new JmapSerializerOptions(configureJson));
 
         services.AddHttpClient<IJmapClient, JmapClient>()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
